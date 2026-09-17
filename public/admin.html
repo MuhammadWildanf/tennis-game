@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Dashboard — Tennis Challenge</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .app { max-width: 860px; }
+    .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-bottom: 18px; }
+    .stat { background: rgba(255,255,255,.06); border: 1px solid var(--card-border); border-radius: 12px; padding: 12px; text-align: center; }
+    .stat b { display: block; font-size: 24px; font-weight: 800; color: var(--gold); }
+    .stat span { font-size: 11px; font-weight: 700; letter-spacing: .08em; color: var(--text-dim); }
+    .admin-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 8px; }
+    .admin-table th, .admin-table td { padding: 8px 10px; border-bottom: 1px solid rgba(255,255,255,.08); text-align: left; }
+    .admin-table th { font-size: 11px; letter-spacing: .08em; color: var(--text-dim); }
+    .pill { display: inline-block; font-size: 11px; font-weight: 800; border-radius: 999px; padding: 2px 10px; }
+    .pill.pending { background: rgba(245,184,30,.18); color: var(--gold); }
+    .pill.confirmed { background: rgba(61,220,132,.18); color: var(--green); }
+    .pill.win { background: rgba(61,220,132,.18); color: var(--green); }
+    .pill.loss { background: rgba(255,123,123,.18); color: var(--danger); }
+    h3 { font-size: 15px; font-weight: 800; margin: 18px 0 4px; letter-spacing: .02em; }
+    .refresh-note { text-align: center; font-size: 11px; color: var(--text-dim); margin-top: 14px; }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="brand">
+      <h1 class="brand-title">Tennis Challenge<br /><span>Admin Dashboard</span></h1>
+      <p class="partners-caption">STAFF ONLY</p>
+    </header>
+
+    <section class="lb-card">
+      <p id="admin-error" class="form-error"></p>
+
+      <div id="admin-body" class="hidden">
+        <div class="stat-grid" id="stat-grid"></div>
+
+        <h3>⏳ Queue (turn-taking)</h3>
+        <div style="display:flex;gap:16px;align-items:center;margin:8px 0 4px;flex-wrap:wrap">
+          <img src="/qr/join.png" alt="Join QR — print me" style="width:132px;height:132px;background:#fff;padding:6px;border-radius:10px" />
+          <p class="link-sub" style="flex:1;min-width:200px;text-align:left">
+            Print this QR &amp; place it <b>outside the game</b> (poster/banner). Anyone scans → joins queue.<br />
+            Open this dashboard via the <b>LAN IP</b> so the QR encodes the LAN address, then right-click → print.<br />
+            Join URL: <b id="join-url"></b>
+          </p>
+        </div>
+        <div id="queue-list"></div>
+
+        <h3>📜 Recent matches</h3>
+        <div id="matches-list"></div>
+
+        <h3>🏆 Leaderboard</h3>
+        <div id="lb-list-admin"></div>
+
+        <p class="refresh-note">Auto-refresh every 5s · <span id="last-upd"></span></p>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast hidden"><span id="toast-text"></span></div>
+
+  <script>
+    'use strict';
+    const $ = (s) => document.querySelector(s);
+
+    async function api(path, options = {}) {
+      const res = await fetch(path, {
+        method: options.method || 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        body: options.body
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Request failed');
+      return data;
+    }
+    const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+    async function loadAll() {
+      const errEl = $('#admin-error');
+      errEl.classList.remove('show');
+      try {
+        const [stats, matches, lb, queue] = await Promise.all([
+          api('/api/admin/stats'),
+          api('/api/admin/matches'),
+          fetch('/api/leaderboard?sort=best_score&limit=10').then((r) => r.json()),
+          api('/api/admin/queue')
+        ]);
+        $('#admin-body').classList.remove('hidden');
+        renderStats(stats);
+        renderQueue(queue);
+        renderMatches(matches);
+        renderLb(lb);
+        $('#last-upd').textContent = 'updated ' + new Date().toLocaleTimeString();
+      } catch (e) {
+        errEl.textContent = e.message;
+        errEl.classList.add('show');
+      }
+    }
+
+    function renderStats(s) {
+      const cards = [
+        [s.users_total, 'USERS'], [s.users_played, 'PLAYED'],
+        [s.matches_total, 'MATCHES'], [s.wins, 'WINS']
+      ];
+      $('#stat-grid').innerHTML = cards.map(([v, l]) => `<div class="stat"><b>${v}</b><span>${l}</span></div>`).join('');
+    }
+    function renderQueue(rows) {
+      $('#join-url').textContent = location.origin + '/join';
+      $('#queue-list').innerHTML = rows.length ? `<table class="admin-table"><tr><th>#</th><th>PLAYER</th><th>STATUS</th><th>SINCE</th><th></th></tr>` +
+        rows.map((q, i) => `<tr><td>${i + 1}</td><td><b>${esc(q.username)}</b>${q.ready_at ? ' ✓' : ''}</td><td><span class="pill ${q.status === 'current' ? 'confirmed' : 'pending'}">${esc(q.status)}${q.ready_at ? ' · ready' : ''}</span></td><td>${esc(q.created_at)}</td><td><button class="btn-outline-light btn-small" style="flex:none;padding:4px 10px" onclick="removeFromQueue('${esc(q.username)}')">✕</button></td></tr>`).join('') + `</table>`
+        : '<p class="link-sub">Queue empty — Unity idle.</p>';
+    }
+    async function removeFromQueue(username) {
+      if (!confirm(`Remove ${username} from queue?`)) return;
+      try {
+        await api('/api/admin/queue/remove', { method: 'POST', body: JSON.stringify({ username }) });
+        loadAll();
+      } catch (e) {
+        alert(e.message);
+      }
+    }
+    function renderMatches(rows) {
+      $('#matches-list').innerHTML = rows.length ? `<table class="admin-table"><tr><th>PLAYER</th><th>SCORE</th><th>RESULT</th><th>WHEN</th></tr>` +
+        rows.map((m) => `<tr><td><b>${esc(m.username)}</b></td><td style="color:var(--gold);font-weight:800">${esc(m.score)}</td><td><span class="pill ${esc(m.result)}">${esc(m.result)}</span></td><td>${esc(m.played_at)}</td></tr>`).join('') + `</table>`
+        : '<p class="link-sub">No matches yet — play one!</p>';
+    }
+    function renderLb(rows) {
+      $('#lb-list-admin').innerHTML = rows.length ? `<table class="admin-table"><tr><th>#</th><th>PLAYER</th><th>BEST</th><th>W/L</th></tr>` +
+        rows.map((p) => `<tr><td>${p.rank}</td><td><b>${esc(p.display_name || p.username)}</b></td><td style="color:var(--gold);font-weight:800">${p.best_score}</td><td>${p.wins}/${p.losses}</td></tr>`).join('') + `</table>`
+        : '<p class="link-sub">Leaderboard empty.</p>';
+    }
+
+    loadAll();
+    setInterval(() => { if (!$('#admin-body').classList.contains('hidden')) loadAll(); }, 5000);
+  </script>
+</body>
+</html>

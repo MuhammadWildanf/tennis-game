@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Game Display — Tennis Challenge</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .app { max-width: 900px; }
+    .display-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    @media (max-width: 640px) { .display-grid { grid-template-columns: 1fr; } }
+    .qr-box { text-align: center; }
+    .qr-box img { width: 100%; max-width: 300px; background: #fff; padding: 12px; border-radius: 16px; }
+    .join-url { margin-top: 10px; font-size: 15px; font-weight: 800; letter-spacing: .04em; word-break: break-all; }
+    .now-box { text-align: center; padding: 18px 10px; }
+    .now-label { font-size: 12px; font-weight: 800; letter-spacing: .25em; color: var(--text-dim); }
+    .now-name { font-size: 44px; font-weight: 900; color: var(--gold); letter-spacing: .02em; margin: 6px 0; }
+    .now-sub { font-size: 14px; color: var(--text-dim); font-weight: 600; }
+    .wait-list { list-style: none; margin-top: 8px; display: flex; flex-direction: column; gap: 6px; max-height: 220px; overflow: hidden; }
+    .wait-list li { display: flex; gap: 10px; align-items: center; background: rgba(255,255,255,.06); border-radius: 10px; padding: 8px 14px; font-weight: 700; }
+    .wait-list .n { color: var(--gold); font-weight: 900; min-width: 34px; }
+    .mini-lb { list-style: none; margin-top: 8px; display: flex; flex-direction: column; gap: 6px; }
+    .mini-lb li { display: grid; grid-template-columns: 30px 1fr auto; padding: 6px 12px; border-radius: 10px; font-size: 14px; font-weight: 600; }
+    .mini-lb li.first { background: var(--gold-soft); border: 1px solid rgba(245,184,30,.55); color: var(--gold); font-weight: 800; }
+    .mini-lb .s { color: var(--gold); font-weight: 800; }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="brand">
+      <h1 class="brand-title">Wealth Symposium<br /><span>Tennis Challenge</span></h1>
+      <p class="partners-caption">SCAN TO PLAY</p>
+    </header>
+
+    <section class="lb-card">
+      <div class="display-grid">
+        <div class="qr-box">
+          <img src="/qr/join.png" alt="Scan to join queue" />
+          <div class="join-url" id="join-url"></div>
+          <p class="link-sub">Scan → alias → nomor antrian di HP</p>
+        </div>
+        <div class="now-box">
+          <div class="now-label">NOW PLAYING</div>
+          <div class="now-name" id="now-name">–</div>
+          <div class="now-sub" id="now-sub">Waiting for players…</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="lb-card">
+      <div class="display-grid">
+        <div>
+          <h3 style="font-size:15px;font-weight:800">⏳ IN LINE (<span id="wait-count">0</span>)</h3>
+          <ul class="wait-list" id="wait-list"></ul>
+        </div>
+        <div>
+          <h3 style="font-size:15px;font-weight:800">🏆 TOP 5</h3>
+          <ul class="mini-lb" id="mini-lb"></ul>
+        </div>
+      </div>
+      <p class="refresh-note" style="text-align:center;font-size:11px;color:var(--text-dim);margin-top:12px">Live · <span id="last-upd"></span></p>
+    </section>
+  </main>
+
+  <script>
+    'use strict';
+    const $ = (s) => document.querySelector(s);
+    const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    $('#join-url').textContent = location.origin + '/join';
+
+    async function tickState() {
+      try {
+        const s = await (await fetch('/api/queue/state')).json();
+        if (s.current) {
+          $('#now-name').textContent = s.current.display_name || s.current.username;
+          $('#now-sub').textContent = 'Playing… 🎾';
+        } else {
+          $('#now-name').textContent = '–';
+          $('#now-sub').textContent = s.total_waiting ? 'Calling next player…' : 'Waiting for players…';
+        }
+        $('#wait-count').textContent = s.total_waiting;
+        $('#wait-list').innerHTML = s.waiting.slice(0, 6).map((w) =>
+          `<li><span class="n">#${w.position}</span><span>${esc(w.display_name || w.username)}</span></li>`
+        ).join('') || '<li><span style="color:var(--text-dim)">Queue empty — scan to join!</span></li>';
+        $('#last-upd').textContent = 'updated ' + new Date().toLocaleTimeString();
+      } catch (_) {}
+    }
+    async function tickLb() {
+      try {
+        const lb = await (await fetch('/api/leaderboard?sort=best_score&limit=5')).json();
+        $('#mini-lb').innerHTML = lb.map((p) =>
+          `<li class="${p.rank === 1 ? 'first' : ''}"><span>${p.rank === 1 ? '👑' : p.rank}</span><span>${esc(p.display_name || p.username)}</span><span class="s">${p.best_score}</span></li>`
+        ).join('') || '<li><span style="color:var(--text-dim)">No scores yet!</span></li>';
+      } catch (_) {}
+    }
+    tickState(); tickLb();
+    setInterval(tickState, 2000);
+    setInterval(tickLb, 10000);
+  </script>
+</body>
+</html>

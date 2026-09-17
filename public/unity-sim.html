@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Unity Simulator — Tennis Challenge</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .app { max-width: 900px; }
+    .sim-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    @media (max-width: 640px) { .sim-grid { grid-template-columns: 1fr; } }
+    .qr-box { text-align: center; }
+    .qr-box img { width: 100%; max-width: 220px; background: #fff; padding: 10px; border-radius: 14px; }
+    .btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+    .btn-row button { flex: 1; min-width: 140px; border: none; border-radius: 10px; padding: 12px; font-family: inherit; font-weight: 800; cursor: pointer; }
+    .btn-go { background: linear-gradient(180deg,#6db4ef,#4a9fe8); color: #fff; }
+    .btn-warn { background: rgba(245,184,30,.18); color: var(--gold); border: 1px solid rgba(245,184,30,.5) !important; }
+    .btn-auto { background: rgba(61,220,132,.15); color: var(--green); border: 1px solid rgba(61,220,132,.5) !important; }
+    .btn-auto.on { background: var(--green); color: #0a1a3f; }
+    #sim-log { background: #050b22; border: 1px solid var(--card-border); border-radius: 10px; padding: 10px 12px; font-family: monospace; font-size: 12px; height: 260px; overflow-y: auto; margin-top: 8px; white-space: pre-wrap; }
+    #sim-log .ok { color: var(--green); }
+    #sim-log .err { color: var(--danger); }
+    #sim-log .inf { color: var(--sky); }
+    .kv { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; font-size: 13px; margin-top: 8px; text-align: left; }
+    .kv b { color: var(--gold); word-break: break-all; }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="brand">
+      <h1 class="brand-title">Unity<br /><span>Simulator</span></h1>
+      <p class="partners-caption">TESTING TOOL — BERPERAN SEBAGAI STASIUN UNITY (USHER MODE)</p>
+    </header>
+
+    <section class="lb-card">
+      <div class="sim-grid">
+        <div class="qr-box">
+          <img src="/qr/join.png" alt="Join QR" />
+          <p class="link-sub">QR ini = yang tampil di layar game.<br />Scan pakai HP untuk join. Usher pick dari <a href="/queue">/queue</a>.</p>
+          <div class="kv">
+            <span>Current</span><b id="sim-current">–</b>
+            <span>Waiting</span><b id="sim-waiting">0</b>
+            <span>Turn token</span><b id="sim-token">–</b>
+            <span>Playing as</span><b id="sim-user">–</b>
+          </div>
+        </div>
+        <div>
+          <h3 style="font-size:15px;font-weight:800">Kontrol (persis loop Unity asli)</h3>
+          <div class="btn-row">
+            <button class="btn-go" onclick="simFinish()">Finish: skor acak</button>
+            <button class="btn-warn" onclick="simReset()">Reset turn lokal</button>
+          </div>
+          <div class="btn-row">
+            <button class="btn-auto" id="auto-btn" onclick="toggleAuto()">Auto-play: OFF</button>
+          </div>
+          <p class="link-sub" style="margin-top:10px">Polling state tiap 2 detik → current baru? claim-turn → langsung "main". Auto-play = tiap ada giliran, tunggu 5 detik lalu finish skor acak (simulasi game berjalan).</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="lb-card">
+      <h3 style="font-size:15px;font-weight:800">Log API (contoh untuk dev Unity)</h3>
+      <div id="sim-log"></div>
+    </section>
+  </main>
+
+  <script>
+    'use strict';
+    const $ = (s) => document.querySelector(s);
+    const BASE = location.origin;
+    let turnToken = null;
+    let turnUser = null; // username yang diingat (rememberedUsername)
+    let auto = false;
+    let autoTimer = null;
+    let autoCountdown = null;
+
+    function log(msg, cls) {
+      const el = $('#sim-log');
+      const line = document.createElement('div');
+      if (cls) line.className = cls;
+      line.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+      el.appendChild(line);
+      el.scrollTop = el.scrollHeight;
+    }
+
+    async function call(method, path, body, token) {
+      const headers = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = 'Bearer ' + token;
+      const res = await fetch(BASE + path, {
+        method, headers, body: body ? JSON.stringify(body) : undefined
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(`${method} ${path} → ${res.status}: ${data.error || 'failed'}`);
+      return data;
+    }
+
+    function render(state) {
+      $('#sim-current').textContent = state.current ? state.current.username : '– (idle)';
+      $('#sim-waiting').textContent = state.total_waiting;
+      $('#sim-token').textContent = turnToken ? turnToken.slice(0, 8) + '…' : '–';
+      $('#sim-user').textContent = turnUser || '–';
+    }
+
+    // === loop Unity asli (usher mode): polling + claim, langsung main ===
+    async function pollOnce() {
+      try {
+        const s = await call('GET', '/api/queue/state');
+        if (!s.current) {
+          if (turnUser) log('giliran selesai, kembali idle — tunggu pick usher berikut', 'inf');
+          turnToken = null; turnUser = null;
+        } else if (s.current.username !== turnUser) {
+          // current baru muncul → claim (overwrite token lama) → langsung main
+          const c = await call('POST', '/api/queue/claim-turn');
+          turnToken = c.token;
+          turnUser = c.user.username;
+          log(`usher pick ${turnUser} → claim OK (token ${turnToken.slice(0, 8)}…) → MULAI GAME 🎾`, 'ok');
+          if (auto) scheduleAutoFinish();
+        }
+        render(s);
+      } catch (e) { log(e.message, 'err'); }
+    }
+
+    async function simFinish() {
+      if (!turnToken) { log('tidak ada giliran aktif — usher pick dulu di /queue', 'err'); return; }
+      const score = 100 + Math.floor(Math.random() * 400);
+      const result = Math.random() > 0.4 ? 'win' : 'loss';
+      try {
+        const r = await call('POST', '/api/score', { score, result, opponent: 'AI' }, turnToken);
+        log(`score ${turnUser} = ${score} (${result}) → tercatat (${r.match_id.slice(0, 8)}…), token hangus`, 'ok');
+        turnToken = null; turnUser = null;
+      } catch (e) { log(e.message, 'err'); }
+      pollOnce();
+    }
+
+    function simReset() {
+      turnToken = null; turnUser = null;
+      clearTimeout(autoCountdown);
+      log('turn lokal direset (simulasi restart Unity — claim berikutnya idempotent)', 'inf');
+      pollOnce();
+    }
+
+    function scheduleAutoFinish() {
+      clearTimeout(autoCountdown);
+      autoCountdown = setTimeout(() => {
+        if (auto && turnToken) simFinish();
+      }, 5000);
+    }
+
+    function toggleAuto() {
+      auto = !auto;
+      $('#auto-btn').textContent = 'Auto-play: ' + (auto ? 'ON' : 'OFF');
+      $('#auto-btn').classList.toggle('on', auto);
+      log(auto ? 'auto-play ON: tiap giliran difinish otomatis 5 detik setelah claim' : 'auto-play OFF', 'inf');
+      if (auto && turnToken) scheduleAutoFinish();
+      else clearTimeout(autoCountdown);
+    }
+
+    (async function boot() {
+      try {
+        const h = await call('GET', '/api/status');
+        log(`server OK v${h.version}`, 'ok');
+      } catch (e) { log('server tidak terjangkau: ' + e.message + ' — pastikan npm start', 'err'); }
+      pollOnce();
+      clearInterval(autoTimer);
+      autoTimer = setInterval(pollOnce, 2000);
+    })();
+  </script>
+</body>
+</html>

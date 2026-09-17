@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Wealth Symposium Tennis Challenge</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Tennis ball backdrop -->
+  <svg class="court-ball" viewBox="0 0 200 200" aria-hidden="true">
+    <circle cx="100" cy="100" r="96" fill="#d7e94c"/>
+    <path d="M42 18 C 92 58, 92 142, 42 182" stroke="#f2f6fb" stroke-width="7" fill="none"/>
+    <path d="M158 18 C 108 58, 108 142, 158 182" stroke="#f2f6fb" stroke-width="7" fill="none"/>
+  </svg>
+  <div class="court-line"></div>
+
+  <main class="app">
+    <!-- ─── Brand ─── -->
+    <header class="brand">
+      <h1 class="brand-title">Wealth Symposium<br /><span>Tennis Challenge</span></h1>
+      <div class="partners">
+        <span class="ao-logo">AO</span>
+        <span class="partners-divider"></span>
+        <svg class="mc-logo" viewBox="0 0 46 28" aria-label="Mastercard">
+          <circle cx="17" cy="14" r="12" fill="#EB001B"/>
+          <circle cx="29" cy="14" r="12" fill="#F79E1B" fill-opacity="0.85"/>
+        </svg>
+      </div>
+      <p class="partners-caption">OFFICIAL PARTNER</p>
+
+      <!-- Logged-in chip -->
+      <div id="player-chip" class="player-chip hidden">
+        <span class="chip-avatar" id="chip-avatar">J</span>
+        <span class="chip-name" id="chip-name">JAMES</span>
+        <span class="chip-best" id="chip-best">BEST 0</span>
+        <button class="chip-logout" onclick="logout()" title="Log out">✕</button>
+      </div>
+    </header>
+
+    <!-- ─── Registration (like regis.png) ─── -->
+    <section id="regis-section" class="regis-card">
+      <h2>Enter Your Alias</h2>
+      <form id="alias-form" novalidate>
+        <div class="alias-field">
+          <input type="text" id="alias-input" placeholder="JAMES" maxlength="12"
+                 autocomplete="off" autocapitalize="characters" spellcheck="false" />
+        </div>
+        <p class="alias-hint">Use 2–12 characters (A–Z, 0–9)</p>
+        <p id="alias-avail" class="alias-avail"></p>
+        <p id="alias-error" class="form-error"></p>
+        <button type="submit" class="btn-ready" id="ready-btn">
+          <span class="btn-label">Ready</span>
+          <span class="btn-spinner"></span>
+        </button>
+      </form>
+      <p class="regis-foot">GAME&nbsp;&nbsp;·&nbsp;&nbsp;PLAY&nbsp;&nbsp;·&nbsp;&nbsp;CONNECT</p>
+    </section>
+
+    <!-- ─── Join queue (alias terdaftar → masuk antrian) ─── -->
+    <section id="join-section" class="link-card hidden">
+      <h2>Ready to Play?</h2>
+      <p class="link-sub">Scan the QR on the game screen to join the queue — or tap below.</p>
+      <button type="button" class="btn-ready" onclick="location.href='/join'">
+        <span class="btn-label">Join Queue ✓</span>
+        <span class="btn-spinner"></span>
+      </button>
+    </section>
+
+    <!-- ─── Leaderboard (like leaderboard.png) ─── -->
+    <section id="lb-section" class="lb-card">
+      <div class="lb-tabs">
+        <button class="lb-tab active" data-tab="global" onclick="switchLbTab('global')">Global</button>
+        <button class="lb-tab" data-tab="friends" onclick="switchLbTab('friends')">Friends</button>
+      </div>
+
+      <div class="lb-head">
+        <span>#</span><span>PLAYER</span><span class="score-col">SCORE</span>
+      </div>
+
+      <div id="lb-empty" class="lb-empty hidden">
+        <p id="lb-empty-text">No scores yet — be the first on the board!</p>
+      </div>
+      <ul id="lb-list" class="lb-list"></ul>
+
+      <p class="lb-foot">A BRIGHTER GAME TOGETHER</p>
+    </section>
+  </main>
+
+  <div id="toast" class="toast hidden"><span id="toast-text"></span></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

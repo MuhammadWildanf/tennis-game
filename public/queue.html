@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Usher — Pick Player</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .app { max-width: 640px; }
+    .now-card { text-align: center; padding: 20px 12px; }
+    .now-label { font-size: 12px; font-weight: 800; letter-spacing: .25em; color: var(--text-dim); }
+    .now-name { font-size: 52px; font-weight: 900; color: var(--gold); margin: 6px 0; }
+    .now-sub { font-size: 14px; color: var(--text-dim); font-weight: 600; }
+    .q-row { display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,.06); border-radius: 12px; padding: 10px 12px; margin-top: 8px; }
+    .q-row .n { color: var(--gold); font-weight: 900; min-width: 36px; font-size: 18px; }
+    .q-row .who { flex: 1; min-width: 0; }
+    .q-row .who b { font-size: 17px; letter-spacing: .03em; }
+    .q-row .who span { display: block; font-size: 11px; color: var(--text-dim); }
+    .btn-play { background: linear-gradient(180deg,#6db4ef,#4a9fe8); border: none; border-radius: 10px; color: #fff; font-weight: 800; padding: 12px 18px; cursor: pointer; font-family: inherit; font-size: 15px; }
+    .btn-x { background: transparent; border: 1px solid var(--card-border); color: var(--text-dim); border-radius: 10px; padding: 12px; cursor: pointer; font-family: inherit; }
+    .btn-big { width: 100%; margin-top: 10px; border-radius: 12px; padding: 14px; font-family: inherit; font-weight: 800; font-size: 16px; cursor: pointer; }
+    .btn-skip { background: rgba(245,184,30,.15); border: 1px solid rgba(245,184,30,.5); color: var(--gold); }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="brand">
+      <h1 class="brand-title">Usher<br /><span>Pick Player</span></h1>
+      <p class="partners-caption">STAFF — PILIH SIAPA MAIN</p>
+    </header>
+
+    <section class="lb-card">
+      <div class="now-card">
+        <div class="now-label">NOW PLAYING</div>
+        <div class="now-name" id="now-name">–</div>
+        <div class="now-sub" id="now-sub">–</div>
+        <button class="btn-big btn-skip" onclick="skip()">Skip ⏭ (panggil berikut FIFO)</button>
+      </div>
+    </section>
+
+    <section class="lb-card">
+      <h3 style="font-size:15px;font-weight:800">⏳ ANTRIAN (<span id="q-count">0</span>) — tap ▶ untuk mainkan</h3>
+      <div id="q-list"></div>
+      <p class="refresh-note" style="text-align:center;font-size:11px;color:var(--text-dim);margin-top:12px">Live · <span id="last-upd"></span></p>
+    </section>
+  </main>
+
+  <div id="toast" class="toast hidden"><span id="toast-text"></span></div>
+
+  <script>
+    'use strict';
+    const $ = (s) => document.querySelector(s);
+    const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+    async function api(path, options = {}) {
+      const res = await fetch(path, {
+        method: options.method || 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        body: options.body
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const err = new Error(data.error || 'Request failed');
+        err.data = data;
+        throw err;
+      }
+      return data;
+    }
+    function toast(t) {
+      $('#toast-text').textContent = t;
+      $('#toast').classList.remove('hidden');
+      clearTimeout(window._tt);
+      window._tt = setTimeout(() => $('#toast').classList.add('hidden'), 3000);
+    }
+
+    async function refresh() {
+      try {
+        const s = await api('/api/queue/state');
+        if (s.current) {
+          $('#now-name').textContent = s.current.display_name || s.current.username;
+          $('#now-sub').textContent = 'Playing… 🎾';
+        } else {
+          $('#now-name').textContent = '–';
+          $('#now-sub').textContent = s.total_waiting ? 'Siap dipanggil ↓' : 'Belum ada pemain';
+        }
+        $('#q-count').textContent = s.total_waiting;
+        $('#q-list').innerHTML = s.waiting.map((w) =>
+          `<div class="q-row"><span class="n">#${w.position}</span>` +
+          `<span class="who"><b>${esc(w.display_name || w.username)}</b><span>${esc(w.created_at || '')}</span></span>` +
+          `<button class="btn-play" onclick="pick('${esc(w.username)}')">▶</button>` +
+          `<button class="btn-x" onclick="removeQ('${esc(w.username)}')">✕</button></div>`
+        ).join('') || '<p class="link-sub">Antrian kosong.</p>';
+        $('#last-upd').textContent = 'updated ' + new Date().toLocaleTimeString();
+      } catch (e) { toast(e.message); }
+    }
+
+    async function pick(username, force) {
+      try {
+        const r = await api('/api/queue/pick', { method: 'POST', body: JSON.stringify({ username, force: !!force }) });
+        toast(`${r.current.user.username} naik! 🎾`);
+      } catch (e) {
+        if (e.data && e.data.need_force) {
+          if (confirm(`${e.message}\n\nPaksa ganti pemain?`)) return pick(username, true);
+          return;
+        }
+        toast(e.message);
+      }
+      refresh();
+    }
+
+    async function skip() {
+      try {
+        const r = await api('/api/queue/next', { method: 'POST' });
+        toast(r.current ? `${r.current.user.username} naik!` : 'Antrian kosong');
+      } catch (e) { toast(e.message); }
+      refresh();
+    }
+
+    async function removeQ(username) {
+      if (!confirm(`Keluarkan ${username} dari antrian?`)) return;
+      try {
+        await api('/api/admin/queue/remove', { method: 'POST', body: JSON.stringify({ username }) });
+      } catch (e) { toast(e.message); }
+      refresh();
+    }
+
+    refresh();
+    setInterval(refresh, 3000);
+  </script>
+</body>
+</html>

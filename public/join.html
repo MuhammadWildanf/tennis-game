@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Join Queue — Tennis Challenge</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .queue-pos { font-size: 64px; font-weight: 900; color: var(--gold); text-align: center; line-height: 1; margin: 10px 0 2px; }
+    .queue-label { text-align: center; font-size: 13px; color: var(--text-dim); font-weight: 700; letter-spacing: .12em; }
+    .queue-msg { text-align: center; font-size: 15px; margin-top: 10px; line-height: 1.6; }
+    .queue-msg.big { font-size: 19px; font-weight: 800; color: var(--green); }
+  </style>
+</head>
+<body>
+  <svg class="court-ball" viewBox="0 0 200 200" aria-hidden="true">
+    <circle cx="100" cy="100" r="96" fill="#d7e94c"/>
+    <path d="M42 18 C 92 58, 92 142, 42 182" stroke="#f2f6fb" stroke-width="7" fill="none"/>
+    <path d="M158 18 C 108 58, 108 142, 158 182" stroke="#f2f6fb" stroke-width="7" fill="none"/>
+  </svg>
+  <div class="court-line"></div>
+
+  <main class="app">
+    <header class="brand">
+      <h1 class="brand-title">Wealth Symposium<br /><span>Tennis Challenge</span></h1>
+      <p class="partners-caption">JOIN QUEUE</p>
+    </header>
+
+    <section class="link-card">
+      <h2>Play Tennis</h2>
+      <p class="link-sub">You scanned the game QR. Enter your alias to join the line — we will call you when it is your turn.</p>
+
+      <!-- step 1: alias -->
+      <form id="join-alias-form" class="hidden" novalidate style="margin-top:12px">
+        <div class="alias-field">
+          <input type="text" id="join-alias-input" placeholder="JAMES" maxlength="12"
+                 autocomplete="off" autocapitalize="characters" spellcheck="false" />
+        </div>
+        <p class="alias-hint">Use 2–12 characters (A–Z, 0–9)</p>
+        <p id="join-alias-error" class="form-error"></p>
+        <button type="submit" class="btn-ready" id="join-ready-btn">
+          <span class="btn-label">Ready &amp; Join ✓</span>
+          <span class="btn-spinner"></span>
+        </button>
+      </form>
+
+      <!-- step 2: join button (logged in, not yet in queue) -->
+      <div id="join-idle" class="hidden" style="margin-top:12px">
+        <p class="link-sub" id="join-who"></p>
+        <button class="btn-ready" id="join-btn" onclick="joinQueue()">
+          <span class="btn-label">Join Queue ✓</span>
+          <span class="btn-spinner"></span>
+        </button>
+        <div class="link-actions">
+          <button class="btn-outline-light btn-small" onclick="switchAlias()">Use different alias</button>
+        </div>
+      </div>
+
+      <!-- step 3: live position -->
+      <div id="join-status" class="hidden" style="margin-top:12px">
+        <div class="queue-label">YOUR NUMBER</div>
+        <div class="queue-pos" id="queue-pos">#–</div>
+        <p class="queue-msg" id="queue-msg">Waiting…</p>
+        <div class="link-actions">
+          <button class="btn-outline-light btn-small" onclick="leaveQueue()">Leave queue</button>
+          <button class="btn-outline-light btn-small" onclick="location.href='/'">Leaderboard</button>
+        </div>
+      </div>
+
+      <!-- step 4: finished -->
+      <div id="join-done" class="hidden" style="margin-top:12px; text-align:center">
+        <p class="queue-msg big">Thanks for playing! 🎾</p>
+        <p class="link-sub">Your score is on the leaderboard.</p>
+        <button class="btn-ready" id="again-btn" onclick="joinQueue()" style="margin-top:12px">
+          <span class="btn-label">Play Again ✓</span>
+          <span class="btn-spinner"></span>
+        </button>
+        <div class="link-actions">
+          <button class="btn-outline-light btn-small" onclick="location.href='/'">Leaderboard</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast hidden"><span id="toast-text"></span></div>
+
+  <script>
+    'use strict';
+    const $ = (s) => document.querySelector(s);
+    let authToken = localStorage.getItem('ct_token') || null;
+    let pollTimer = null;
+
+    async function api(path, options = {}) {
+      const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
+      if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+      const res = await fetch(path, { ...options, headers });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Request failed');
+      return data;
+    }
+    function toast(t) {
+      $('#toast-text').textContent = t;
+      $('#toast').classList.remove('hidden');
+      clearTimeout(window._tt);
+      window._tt = setTimeout(() => $('#toast').classList.add('hidden'), 3000);
+    }
+    function loading(btn, on, label) {
+      btn.querySelector('.btn-label').textContent = on ? '' : label;
+      btn.querySelector('.btn-spinner').style.display = on ? 'inline-block' : 'none';
+      btn.disabled = on;
+    }
+
+    const aliasInput = $('#join-alias-input');
+    aliasInput.addEventListener('input', () => {
+      const clean = aliasInput.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 12);
+      if (clean !== aliasInput.value) aliasInput.value = clean;
+    });
+
+    $('#join-alias-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const alias = aliasInput.value.trim().toUpperCase();
+      const errEl = $('#join-alias-error');
+      errEl.classList.remove('show');
+      if (alias.length < 2) { errEl.textContent = 'Alias must be 2–12 characters.'; errEl.classList.add('show'); return; }
+      const btn = $('#join-ready-btn');
+      loading(btn, true);
+      try {
+        const data = await api('/api/signup', { method: 'POST', body: JSON.stringify({ username: alias }) });
+        authToken = data.token;
+        localStorage.setItem('ct_token', authToken);
+        await joinQueue();
+      } catch (err) {
+        errEl.textContent = err.message;
+        errEl.classList.add('show');
+      } finally {
+        loading(btn, false, 'Ready & Join ✓');
+      }
+    });
+
+    async function joinQueue() {
+      const btns = [$('#join-btn'), $('#again-btn')].filter(Boolean);
+      btns.forEach((b) => loading(b, true));
+      try {
+        const data = await api('/api/queue/join', { method: 'POST' });
+        hideDone();
+        showStatus();
+        await refreshStatus();
+        toast(`You are #${data.position} in line! 🎾`);
+      } catch (err) {
+        toast(err.message);
+      } finally {
+        loading($('#join-btn'), false, 'Join Queue ✓');
+        loading($('#again-btn'), false, 'Play Again ✓');
+      }
+    }
+
+    async function refreshStatus() {
+      try {
+        const s = await api('/api/queue/my-status');
+        if (!s.in_queue) {
+          if (s.finished) showDone(); else showIdle();
+          return;
+        }
+        hideDone();
+        showStatus();
+        if (s.status === 'current') {
+          $('#queue-pos').textContent = '#1';
+          const m = $('#queue-msg');
+          m.textContent = 'Get ready… usher will start your game! 🎾';
+          m.classList.add('big');
+        } else {
+          $('#queue-pos').textContent = '#' + s.position;
+          const m = $('#queue-msg');
+          m.classList.remove('big');
+          if (s.position === 1 && s.station_idle) {
+            m.textContent = 'Kamu #1 — layar game memanggilmu dalam beberapa detik. Pastikan game aktif!';
+          } else if (s.ahead === 0) {
+            m.textContent = 'Almost there — you are next!';
+          } else {
+            m.textContent = `${s.ahead} player${s.ahead > 1 ? 's' : ''} ahead of you. Stay on this page.`;
+          }
+        }
+      } catch (_) {}
+    }
+
+    function showIdle() {
+      clearInterval(pollTimer);
+      $('#join-alias-form').classList.add('hidden');
+      $('#join-status').classList.add('hidden');
+      $('#join-done').classList.add('hidden');
+      $('#join-idle').classList.remove('hidden');
+    }
+    function showStatus() {
+      clearInterval(pollTimer);
+      $('#join-alias-form').classList.add('hidden');
+      $('#join-idle').classList.add('hidden');
+      $('#join-done').classList.add('hidden');
+      $('#join-status').classList.remove('hidden');
+      pollTimer = setInterval(refreshStatus, 3000);
+    }
+    function showDone() {
+      clearInterval(pollTimer);
+      $('#join-alias-form').classList.add('hidden');
+      $('#join-idle').classList.add('hidden');
+      $('#join-status').classList.add('hidden');
+      $('#join-done').classList.remove('hidden');
+    }
+    function hideDone() {
+      $('#join-done').classList.add('hidden');
+    }
+
+    async function leaveQueue() {
+      try { await api('/api/queue/leave', { method: 'POST' }); } catch (_) {}
+      clearInterval(pollTimer);
+      location.href = '/';
+    }
+    function switchAlias() {
+      authToken = null;
+      localStorage.removeItem('ct_token');
+      clearInterval(pollTimer);
+      $('#join-idle').classList.add('hidden');
+      $('#join-status').classList.add('hidden');
+      $('#join-alias-form').classList.remove('hidden');
+    }
+
+    (async function boot() {
+      if (!authToken) {
+        $('#join-alias-form').classList.remove('hidden');
+        return;
+      }
+      try {
+        const me = await api('/api/profile');
+        const s = await api('/api/queue/my-status');
+        if (s.in_queue) {
+          showStatus();
+          await refreshStatus();
+        } else {
+          $('#join-who').textContent = `Playing as ${me.username} — tap below to line up.`;
+          showIdle();
+        }
+      } catch (_) {
+        authToken = null;
+        localStorage.removeItem('ct_token');
+        $('#join-alias-form').classList.remove('hidden');
+      }
+    })();
+  </script>
+</body>
+</html>
