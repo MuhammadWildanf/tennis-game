@@ -13,7 +13,14 @@
 }
 .ev-footwave img { float: right; height: 100%; width: auto; max-width: none; }
 
-.ev-app { position: relative; z-index: 2; max-width: 430px; margin: 0 auto; padding: 30px 20px 190px; overflow-x: clip; }
+.ev-app { position: relative; z-index: 2; max-width: 430px; margin: 0 auto; padding: 30px 20px 190px; overflow-x: clip; min-height: 100svh; display: flex; flex-direction: column; }
+/* header selalu di atas, card aktif di tengah (seperti layar HP) */
+.ev-app > header { flex: none; }
+.ev-app > section.ev-card { margin-top: auto; margin-bottom: auto; }
+/* halaman usher (2 card): sebar atas–bawah */
+.ev-app > .ev-cols { flex: 1 0 auto; display: flex; flex-direction: column; justify-content: space-evenly; margin-top: 0; }
+.ev-cols .ev-card { margin-top: 0; }
+.ev-app > nav.ev-links { flex: none; }
 .ev-app img { max-width: 100%; }
 .ev-footwave img { max-width: none; }
 
