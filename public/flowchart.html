@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Flowchart Sistem — Tennis Challenge</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; background: #f4f6f9; color: #1a1a1a; }
+    main { max-width: 820px; margin: 0 auto; padding: 32px 20px 60px; }
+    h1 { font-size: 24px; margin-bottom: 4px; }
+    .sub { color: #666; font-size: 13px; margin-bottom: 16px; }
+    .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 13px; margin-bottom: 8px; }
+    .legend span { display: inline-flex; align-items: center; gap: 6px; }
+    .dot { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+    svg { width: 100%; height: auto; background: #fff; border: 1px solid #ddd; border-radius: 12px; }
+    nav { margin-top: 20px; font-size: 14px; }
+    nav a { color: #0a2a6e; margin-right: 16px; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Flowchart Sistem — Tennis Challenge</h1>
+    <p class="sub">Alur usher-driven: QR → alias → antrian → usher pick → Unity main → score. v1.1.0</p>
+    <div class="legend">
+      <span><i class="dot" style="background:#1a56db"></i>Pemain / HP</span>
+      <span><i class="dot" style="background:#e1251b"></i>Usher / Staff</span>
+      <span><i class="dot" style="background:#137333"></i>Unity</span>
+      <span><i class="dot" style="background:#0a2a6e"></i>Server</span>
+    </div>
+
+    <svg viewBox="0 0 760 1210" role="img" aria-label="Flowchart alur sistem">
+      <defs>
+        <marker id="ar" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+          <path d="M0,0 L8,3 L0,6 Z" fill="#555"></path>
+        </marker>
+      </defs>
+      <style>
+        .t { font-family: system-ui, sans-serif; }
+        .step { font-size: 15px; font-weight: 700; fill: #111; }
+        .api { font-family: Consolas, monospace; font-size: 12.5px; fill: #0a2a6e; }
+        .actor { font-size: 11px; font-weight: 700; fill: #fff; letter-spacing: .06em; }
+        .note { font-size: 12px; fill: #555; }
+      </style>
+
+      <!-- 1 -->
+      <g>
+        <rect x="150" y="10" width="460" height="96" rx="12" fill="#fff" stroke="#1a56db" stroke-width="3"/>
+        <rect x="150" y="10" width="150" height="24" rx="12" fill="#1a56db"/>
+        <rect x="150" y="22" width="150" height="12" fill="#1a56db"/>
+        <text class="t actor" x="225" y="27" text-anchor="middle">PEMAIN / HP</text>
+        <text class="t step" x="380" y="60" text-anchor="middle">Scan QR statis (di mana saja)</text>
+        <text class="t api" x="380" y="82" text-anchor="middle">GET /qr/join.png → /join</text>
+      </g>
+      <!-- 2 -->
+      <g>
+        <line x1="380" y1="106" x2="380" y2="128" stroke="#555" stroke-width="2" marker-end="url(#ar)"/>
+        <rect x="150" y="128" width="460" height="96" rx="12" fill="#fff" stroke="#1a56db" stroke-width="3"/>
+        <rect x="150" y="128" width="150" height="24" rx="12" fill="#1a56db"/>
+        <rect x="150" y="140" width="150" height="12" fill="#1a56db"/>
+        <text class="t actor" x="225" y="145" text-anchor="middle">PEMAIN / HP</text>
+        <text class="t step" x="380" y="178" text-anchor="middle">Isi alias (2–12 char A–Z 0–9)</text>
+        <text class="t api" x="380" y="200" text-anchor="middle">POST /api/signup → token HP</text>
+      </g>
+      <!-- 3 -->
+      <g>
+        <line x1="380" y1="224" x2="380" y2="246" stroke="#555" stroke-width="2" marker-end="url(#ar)"/>
+        <rect x="150" y="246" width="460" height="106" rx="12" fill="#fff" stroke="#1a56db" stroke-width="3"/>
+        <rect x="150" y="246" width="150" height="24" rx="12" fill="#1a56db"/>
+        <rect x="150" y="258" width="150" height="12" fill="#1a56db"/>
+        <text class="t actor" x="225" y="263" text-anchor="middle">PEMAIN / HP</text>
+        <text class="t step" x="380" y="296" text-anchor="middle">Masuk antrian, dapat nomor</text>
+        <text class="t api" x="380" y="318" text-anchor="middle">POST /api/queue/join (+ polling my-status)</text>
+      </g>
+      <!-- 4 -->
+      <g>
+        <line x1="380" y1="352" x2="380" y2="374" stroke="#555" stroke-width="2" marker-end="url(#ar)"/>
+        <rect x="150" y="374" width="460" height="106" rx="12" fill="#fff" stroke="#e1251b" stroke-width="3"/>
+        <rect x="150" y="374" width="150" height="24" rx="12" fill="#e1251b"/>
+        <rect x="150" y="386" width="150" height="12" fill="#e1251b"/>
+        <text class="t actor" x="225" y="391" text-anchor="middle">USHER (/queue)</text>
+        <text class="t step" x="380" y="424" text-anchor="middle">Tap ▶ pada pemain → jadi current</text>
+        <text class="t api" x="380" y="446" text-anchor="middle">POST /api/queue/pick {username}</text>
+      </g>
+      <!-- 5 -->
+      <g>
+        <line x1="380" y1="480" x2="380" y2="502" stroke="#555" stroke-width="2" marker-end="url(#ar)"/>
+        <rect x="150" y="502" width="460" height="106" rx="12" fill="#fff" stroke="#137333" stroke-width="3"/>
+        <rect x="150" y="502" width="150" height="24" rx="12" fill="#137333"/>
+        <rect x="150" y="514" width="150" height="12" fill="#137333"/>
+        <text class="t actor" x="225" y="519" text-anchor="middle">UNITY</text>
+        <text class="t step" x="380" y="552" text-anchor="middle">Polling tiap 2 detik → current baru?</text>
+        <text class="t api" x="380" y="574" text-anchor="middle">GET /api/queue/state</text>
+      </g>
+      <!-- 6 -->
+      <g>
+        <line x1="380" y1="608" x2="380" y2="630" stroke="#555" stroke-width="2" marker-end="url(#ar)"/>
+        <rect x="150" y="630" width="460" height="106" rx="12" fill="#fff" stroke="#137333" stroke-width="3"/>
+        <rect x="150" y="630" width="150" height="24" rx="12" fill="#137333"/>
+        <rect x="150" y="642" width="150" height="12" fill="#137333"/>
+        <text class="t actor" x="225" y="647" text-anchor="middle">UNITY</text>
+        <text class="t step" x="380" y="680" text-anchor="middle">Claim token → LANGSUNG MAIN</text>
+        <text class="t api" x="380" y="702" text-anchor="middle">POST /api/queue/claim-turn (overwrite token lama)</text>
+      </g>
+      <!-- 7 -->
+      <g>
+        <line x1="380" y1="736" x2="380" y2="758" stroke="#555" stroke-width="2" marker-end="url(#ar)"/>
+        <rect x="150" y="758" width="460" height="106" rx="12" fill="#fff" stroke="#137333" stroke-width="3"/>
+        <rect x="150" y="758" width="150" height="24" rx="12" fill="#137333"/>
+        <rect x="150" y="770" width="150" height="12" fill="#137333"/>
+        <text class="t actor" x="225" y="775" text-anchor="middle">UNITY</text>
+        <text class="t step" x="380" y="808" text-anchor="middle">Game selesai → kirim score</text>
+        <text class="t api" x="380" y="830" text-anchor="middle">POST /api/score (Bearer token → hangus)</text>
+      </g>
+      <!-- 8 -->
+      <g>
+        <line x1="380" y1="864" x2="380" y2="886" stroke="#555" stroke-width="2" marker-end="url(#ar)"/>
+        <rect x="150" y="886" width="460" height="106" rx="12" fill="#fff" stroke="#0a2a6e" stroke-width="3"/>
+        <rect x="150" y="886" width="150" height="24" rx="12" fill="#0a2a6e"/>
+        <rect x="150" y="898" width="150" height="12" fill="#0a2a6e"/>
+        <text class="t actor" x="225" y="903" text-anchor="middle">SERVER</text>
+        <text class="t step" x="380" y="936" text-anchor="middle">Score tercatat + leaderboard update</text>
+        <text class="t api" x="380" y="958" text-anchor="middle">GET /api/leaderboard → tampil di Unity + /scoreboard</text>
+      </g>
+      <!-- loop back -->
+      <g>
+        <path d="M 610 939 L 680 939 L 680 427 L 610 427" fill="none" stroke="#e1251b" stroke-width="2" stroke-dasharray="7 5" marker-end="url(#ar)"/>
+        <text class="t note" x="688" y="680">usher pick</text>
+        <text class="t note" x="688" y="696">berikutnya ↩</text>
+      </g>
+      <!-- rules -->
+      <g>
+        <text class="t note" x="150" y="1030">Aturan token: token giliran sekali pakai (401 = sudah masuk, jangan resubmit).</text>
+        <text class="t note" x="150" y="1050">Unity TIDAK panggil next/pick · Pemain TIDAK tekan START · QR bisa di mana saja.</text>
+        <text class="t note" x="150" y="1070">Detail tiap endpoint + contoh JSON: buka /docs · Kontrak Unity: GET /api/unity/info.</text>
+        <text class="t note" x="150" y="1100">Halaman: / (alias) → /join (antrian) → /queue (usher) → /scoreboard · Testing: /unity-sim.html</text>
+      </g>
+    </svg>
+
+    <nav><a href="/">← Home</a><a href="/docs">API Docs</a><a href="/queue">Usher</a></nav>
+  </main>
+</body>
+</html>
