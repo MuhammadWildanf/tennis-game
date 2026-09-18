@@ -4,85 +4,85 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Join Queue — Tennis Challenge</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="event.css" />
   <style>
-    .queue-pos { font-size: 64px; font-weight: 900; color: var(--gold); text-align: center; line-height: 1; margin: 10px 0 2px; }
-    .queue-label { text-align: center; font-size: 13px; color: var(--text-dim); font-weight: 700; letter-spacing: .12em; }
-    .queue-msg { text-align: center; font-size: 15px; margin-top: 10px; line-height: 1.6; }
-    .queue-msg.big { font-size: 19px; font-weight: 800; color: var(--green); }
+    .queue-msg {
+      font-family: 'Astonpoliz', sans-serif;
+      text-align: center; color: #fff;
+      font-size: 17px; letter-spacing: .06em; margin-top: 18px; line-height: 1.5;
+    }
+    .queue-msg.big { font-family: 'Basenji', sans-serif; font-size: 30px; letter-spacing: .02em; }
+    .queue-name { margin-top: 18px; }
+    .mini-links { text-align: center; margin-top: 16px; }
+    .mini-links button {
+      background: none; border: none; cursor: pointer; font-family: 'Astonpoliz', sans-serif;
+      color: rgba(255,255,255,.85); font-size: 14px; letter-spacing: .08em;
+      text-decoration: underline; margin: 0 8px;
+    }
   </style>
 </head>
-<body>
-  <svg class="court-ball" viewBox="0 0 200 200" aria-hidden="true">
-    <circle cx="100" cy="100" r="96" fill="#d7e94c"/>
-    <path d="M42 18 C 92 58, 92 142, 42 182" stroke="#f2f6fb" stroke-width="7" fill="none"/>
-    <path d="M158 18 C 108 58, 108 142, 158 182" stroke="#f2f6fb" stroke-width="7" fill="none"/>
-  </svg>
-  <div class="court-line"></div>
+<body class="ev-body">
+  <div class="ev-veil" aria-hidden="true"></div>
+  <div class="ev-footwave" aria-hidden="true"><img src="assets/image/footer-wave.png" alt="" /></div>
 
-  <main class="app">
-    <header class="brand">
-      <h1 class="brand-title">Wealth Symposium<br /><span>Tennis Challenge</span></h1>
-      <p class="partners-caption">JOIN QUEUE</p>
+  <main class="app ev-app">
+    <header>
+      <p class="ev-symposium">CITI WEALTH SYMPOSIUM</p>
+      <img class="ev-title" src="assets/image/title.png" alt="Tennis Challenge" />
+      <p class="ev-tagline">PLAY <i>•</i> COMPETE <i>•</i> CONNECT</p>
+      <img class="ev-logo" src="assets/image/logo.png" alt="Citi | Mastercard" />
     </header>
 
-    <section class="link-card">
-      <h2>Play Tennis</h2>
-      <p class="link-sub">You scanned the game QR. Enter your alias to join the line — we will call you when it is your turn.</p>
-
-      <!-- step 1: alias -->
-      <form id="join-alias-form" class="hidden" novalidate style="margin-top:12px">
-        <div class="alias-field">
-          <input type="text" id="join-alias-input" placeholder="JAMES" maxlength="12"
-                 autocomplete="off" autocapitalize="characters" spellcheck="false" />
-        </div>
-        <p class="alias-hint">Use 2–12 characters (A–Z, 0–9)</p>
+    <!-- State 1: isi alias dulu -->
+    <section id="alias-wrap" class="ev-card hidden">
+      <h2>ENTER<br />YOUR ALIAS</h2>
+      <form id="join-alias-form" novalidate>
+        <input type="text" class="ev-pill" id="join-alias-input" placeholder="JAMES" maxlength="12"
+               autocomplete="off" autocapitalize="characters" spellcheck="false" />
+        <p class="ev-hint">use 2 – 12 characters ( A-Z , 0-9 )</p>
         <p id="join-alias-error" class="form-error"></p>
-        <button type="submit" class="btn-ready" id="join-ready-btn">
-          <span class="btn-label">Ready &amp; Join ✓</span>
+        <button type="submit" class="ev-btn" id="join-ready-btn">
+          <span class="btn-label">LET'S PLAY !</span>
           <span class="btn-spinner"></span>
         </button>
       </form>
-
-      <!-- step 2: join button (logged in, not yet in queue) -->
-      <div id="join-idle" class="hidden" style="margin-top:12px">
-        <p class="link-sub" id="join-who"></p>
-        <button class="btn-ready" id="join-btn" onclick="joinQueue()">
-          <span class="btn-label">Join Queue ✓</span>
-          <span class="btn-spinner"></span>
-        </button>
-        <div class="link-actions">
-          <button class="btn-outline-light btn-small" onclick="switchAlias()">Use different alias</button>
-        </div>
-      </div>
-
-      <!-- step 3: live position -->
-      <div id="join-status" class="hidden" style="margin-top:12px">
-        <div class="queue-label">YOUR NUMBER</div>
-        <div class="queue-pos" id="queue-pos">#–</div>
-        <p class="queue-msg" id="queue-msg">Waiting…</p>
-        <div class="link-actions">
-          <button class="btn-outline-light btn-small" onclick="leaveQueue()">Leave queue</button>
-          <button class="btn-outline-light btn-small" onclick="location.href='/'">Leaderboard</button>
-        </div>
-      </div>
-
-      <!-- step 4: finished -->
-      <div id="join-done" class="hidden" style="margin-top:12px; text-align:center">
-        <p class="queue-msg big">Thanks for playing! 🎾</p>
-        <p class="link-sub">Your score is on the leaderboard.</p>
-        <button class="btn-ready" id="again-btn" onclick="joinQueue()" style="margin-top:12px">
-          <span class="btn-label">Play Again ✓</span>
-          <span class="btn-spinner"></span>
-        </button>
-        <div class="link-actions">
-          <button class="btn-outline-light btn-small" onclick="location.href='/'">Leaderboard</button>
-        </div>
-      </div>
     </section>
+
+    <!-- State 2: sudah daftar, belum masuk antrian -->
+    <section id="join-idle" class="ev-card hidden">
+      <h2>READY TO<br />PLAY?</h2>
+      <p class="ev-hint" id="join-who"></p>
+      <button class="ev-btn" id="join-btn" onclick="joinQueue()">
+        <span class="btn-label">JOIN QUEUE ✓</span>
+        <span class="btn-spinner"></span>
+      </button>
+      <div class="mini-links"><button onclick="switchAlias()">Use different alias</button></div>
+    </section>
+
+    <!-- State 3: dalam antrian -->
+    <section id="join-status" class="ev-card hidden">
+      <h2 id="queue-title">ON QUEUE...</h2>
+      <div class="ev-pill queue-name" id="queue-name">–</div>
+      <p class="queue-msg" id="queue-msg">Please wait…</p>
+      <div class="mini-links"><button onclick="leaveQueue()">Leave queue</button></div>
+    </section>
+
+    <!-- State 4: selesai main -->
+    <section id="join-done" class="ev-card hidden">
+      <h2>THANKS FOR<br />PLAYING!</h2>
+      <p class="ev-hint">Your score is on the leaderboard.</p>
+      <button class="ev-btn" id="again-btn" onclick="joinQueue()">
+        <span class="btn-label">PLAY AGAIN ✓</span>
+        <span class="btn-spinner"></span>
+      </button>
+      <nav class="ev-links"><a href="/scoreboard">LEADERBOARDS →</a></nav>
+    </section>
+
+    <nav class="ev-links">
+      <a href="/">← ALIAS</a>
+      <a href="/scoreboard">LEADERBOARDS →</a>
+    </nav>
   </main>
 
   <div id="toast" class="toast hidden"><span id="toast-text"></span></div>
@@ -107,10 +107,19 @@
       clearTimeout(window._tt);
       window._tt = setTimeout(() => $('#toast').classList.add('hidden'), 3000);
     }
-    function loading(btn, on, label) {
-      btn.querySelector('.btn-label').textContent = on ? '' : label;
+    function loading(btn, on) {
+      if (!btn.dataset.label) btn.dataset.label = btn.querySelector('.btn-label').textContent;
+      btn.querySelector('.btn-label').textContent = on ? '' : btn.dataset.label;
       btn.querySelector('.btn-spinner').style.display = on ? 'inline-block' : 'none';
       btn.disabled = on;
+    }
+    function hideAll() {
+      for (const id of ['#alias-wrap', '#join-idle', '#join-status', '#join-done']) $(id).classList.add('hidden');
+      clearInterval(pollTimer);
+    }
+    function show(id) {
+      hideAll();
+      $(id).classList.remove('hidden');
     }
 
     const aliasInput = $('#join-alias-input');
@@ -131,12 +140,13 @@
         const data = await api('/api/signup', { method: 'POST', body: JSON.stringify({ username: alias }) });
         authToken = data.token;
         localStorage.setItem('ct_token', authToken);
+        localStorage.setItem('ct_user', data.user.username);
         await joinQueue();
       } catch (err) {
         errEl.textContent = err.message;
         errEl.classList.add('show');
       } finally {
-        loading(btn, false, 'Ready & Join ✓');
+        loading(btn, false);
       }
     });
 
@@ -145,15 +155,15 @@
       btns.forEach((b) => loading(b, true));
       try {
         const data = await api('/api/queue/join', { method: 'POST' });
-        hideDone();
-        showStatus();
+        show('#join-status');
+        pollTimer = setInterval(refreshStatus, 3000);
         await refreshStatus();
         toast(`You are #${data.position} in line! 🎾`);
       } catch (err) {
         toast(err.message);
       } finally {
-        loading($('#join-btn'), false, 'Join Queue ✓');
-        loading($('#again-btn'), false, 'Play Again ✓');
+        loading($('#join-btn'), false);
+        loading($('#again-btn'), false);
       }
     }
 
@@ -161,55 +171,35 @@
       try {
         const s = await api('/api/queue/my-status');
         if (!s.in_queue) {
-          if (s.finished) showDone(); else showIdle();
+          if (s.finished) show('#join-done'); else showIdle();
           return;
         }
-        hideDone();
-        showStatus();
+        show('#join-status');
+        pollTimer = pollTimer || setInterval(refreshStatus, 3000);
+        const title = $('#queue-title');
+        const msg = $('#queue-msg');
+        $('#queue-name').textContent = (localStorage.getItem('ct_user') || '').toUpperCase() || '–';
         if (s.status === 'current') {
-          $('#queue-pos').textContent = '#1';
-          const m = $('#queue-msg');
-          m.textContent = 'Get ready… usher will start your game! 🎾';
-          m.classList.add('big');
+          title.innerHTML = 'YOUR TURN!';
+          msg.textContent = 'Get ready… usher will start your game! 🎾';
+          msg.classList.add('big');
         } else {
-          $('#queue-pos').textContent = '#' + s.position;
-          const m = $('#queue-msg');
-          m.classList.remove('big');
-          if (s.position === 1 && s.station_idle) {
-            m.textContent = 'Kamu #1 — layar game memanggilmu dalam beberapa detik. Pastikan game aktif!';
-          } else if (s.ahead === 0) {
-            m.textContent = 'Almost there — you are next!';
-          } else {
-            m.textContent = `${s.ahead} player${s.ahead > 1 ? 's' : ''} ahead of you. Stay on this page.`;
-          }
+          title.innerHTML = 'ON QUEUE...';
+          msg.classList.remove('big');
+          if (s.ahead === 0) msg.textContent = 'Almost there — you are next! Please wait…';
+          else msg.textContent = `#${s.position} in line — ${s.ahead} ahead of you. Please wait…`;
         }
       } catch (_) {}
     }
 
-    function showIdle() {
-      clearInterval(pollTimer);
-      $('#join-alias-form').classList.add('hidden');
-      $('#join-status').classList.add('hidden');
-      $('#join-done').classList.add('hidden');
-      $('#join-idle').classList.remove('hidden');
-    }
-    function showStatus() {
-      clearInterval(pollTimer);
-      $('#join-alias-form').classList.add('hidden');
-      $('#join-idle').classList.add('hidden');
-      $('#join-done').classList.add('hidden');
-      $('#join-status').classList.remove('hidden');
-      pollTimer = setInterval(refreshStatus, 3000);
-    }
-    function showDone() {
-      clearInterval(pollTimer);
-      $('#join-alias-form').classList.add('hidden');
-      $('#join-idle').classList.add('hidden');
-      $('#join-status').classList.add('hidden');
-      $('#join-done').classList.remove('hidden');
-    }
-    function hideDone() {
-      $('#join-done').classList.add('hidden');
+    async function showIdle() {
+      try {
+        const me = await api('/api/profile');
+        localStorage.setItem('ct_user', me.username);
+        $('#join-who').textContent = `Playing as ${me.username} — tap below to line up.`;
+        $('#queue-name').textContent = me.username;
+      } catch (_) {}
+      show('#join-idle');
     }
 
     async function leaveQueue() {
@@ -220,31 +210,27 @@
     function switchAlias() {
       authToken = null;
       localStorage.removeItem('ct_token');
-      clearInterval(pollTimer);
-      $('#join-idle').classList.add('hidden');
-      $('#join-status').classList.add('hidden');
-      $('#join-alias-form').classList.remove('hidden');
+      show('#alias-wrap');
+      aliasInput.focus();
     }
 
     (async function boot() {
-      if (!authToken) {
-        $('#join-alias-form').classList.remove('hidden');
-        return;
-      }
+      if (!authToken) { show('#alias-wrap'); return; }
       try {
-        const me = await api('/api/profile');
         const s = await api('/api/queue/my-status');
         if (s.in_queue) {
-          showStatus();
+          show('#join-status');
+          pollTimer = setInterval(refreshStatus, 3000);
           await refreshStatus();
+        } else if (s.finished) {
+          show('#join-done');
         } else {
-          $('#join-who').textContent = `Playing as ${me.username} — tap below to line up.`;
           showIdle();
         }
       } catch (_) {
         authToken = null;
         localStorage.removeItem('ct_token');
-        $('#join-alias-form').classList.remove('hidden');
+        show('#alias-wrap');
       }
     })();
   </script>

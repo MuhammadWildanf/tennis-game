@@ -4,47 +4,76 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Usher — Pick Player</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="event.css" />
   <style>
-    .app { max-width: 640px; }
-    .now-card { text-align: center; padding: 20px 12px; }
-    .now-label { font-size: 12px; font-weight: 800; letter-spacing: .25em; color: var(--text-dim); }
-    .now-name { font-size: 52px; font-weight: 900; color: var(--gold); margin: 6px 0; }
-    .now-sub { font-size: 14px; color: var(--text-dim); font-weight: 600; }
-    .q-row { display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,.06); border-radius: 12px; padding: 10px 12px; margin-top: 8px; }
-    .q-row .n { color: var(--gold); font-weight: 900; min-width: 36px; font-size: 18px; }
-    .q-row .who { flex: 1; min-width: 0; }
-    .q-row .who b { font-size: 17px; letter-spacing: .03em; }
-    .q-row .who span { display: block; font-size: 11px; color: var(--text-dim); }
-    .btn-play { background: linear-gradient(180deg,#6db4ef,#4a9fe8); border: none; border-radius: 10px; color: #fff; font-weight: 800; padding: 12px 18px; cursor: pointer; font-family: inherit; font-size: 15px; }
-    .btn-x { background: transparent; border: 1px solid var(--card-border); color: var(--text-dim); border-radius: 10px; padding: 12px; cursor: pointer; font-family: inherit; }
-    .btn-big { width: 100%; margin-top: 10px; border-radius: 12px; padding: 14px; font-family: inherit; font-weight: 800; font-size: 16px; cursor: pointer; }
-    .btn-skip { background: rgba(245,184,30,.15); border: 1px solid rgba(245,184,30,.5); color: var(--gold); }
+    .now-label {
+      font-family: 'Astonpoliz', sans-serif; text-align: center;
+      font-size: 13px; letter-spacing: .3em; text-indent: .3em;
+      color: rgba(255,255,255,.85);
+    }
+    .now-name {
+      text-align: center; color: #fff; font-weight: 600;
+      font-size: 44px; letter-spacing: .02em; margin: 6px 0 2px;
+      word-break: break-word;
+    }
+    .now-sub {
+      font-family: 'Astonpoliz', sans-serif; text-align: center;
+      color: rgba(255,255,255,.9); font-size: 15px; letter-spacing: .06em;
+    }
+    .q-head {
+      display: flex; align-items: baseline; justify-content: space-between;
+      color: #fff; margin-bottom: 10px;
+    }
+    .q-head h3 { font-size: 20px; letter-spacing: .04em; }
+    .q-head h3 span { color: #7cc4ff; }
+    .q-row {
+      display: flex; align-items: center; gap: 10px;
+      background: #fff; border-radius: 999px;
+      padding: 8px 8px 8px 18px; margin-top: 8px;
+    }
+    .q-row .n { color: #e1251b; font-size: 19px; min-width: 44px; }
+    .q-row .who { flex: 1; min-width: 0; color: #101010; }
+    .q-row .who b { font-size: 18px; letter-spacing: .02em; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .q-row .who span { display: block; font-size: 11px; color: rgba(0,0,0,.5); font-family: 'Astonpoliz', sans-serif; letter-spacing: .06em; }
+    .btn-play-q {
+      background: #0a2a6e; color: #fff; border: none; border-radius: 50%;
+      width: 46px; height: 46px; font-size: 18px; cursor: pointer; flex: none;
+      font-family: inherit;
+    }
+    .btn-play-q:active { transform: scale(.93); }
+    .btn-x {
+      background: transparent; border: 2px solid rgba(225,37,27,.6); color: #e1251b;
+      border-radius: 50%; width: 40px; height: 40px; cursor: pointer; flex: none;
+      font-family: inherit; font-size: 15px;
+    }
+    .q-empty { text-align: center; color: #fff; font-size: 15px; padding: 12px 0; }
+    .live-note { text-align: center; font-size: 11px; color: rgba(255,255,255,.6); margin-top: 12px; font-family: 'Astonpoliz', sans-serif; letter-spacing: .08em; }
   </style>
 </head>
-<body>
-  <main class="app">
-    <header class="brand">
-      <h1 class="brand-title">Usher<br /><span>Pick Player</span></h1>
-      <p class="partners-caption">STAFF — PILIH SIAPA MAIN</p>
+<body class="ev-body">
+  <div class="ev-veil" aria-hidden="true"></div>
+  <div class="ev-footwave" aria-hidden="true"><img src="assets/image/footer-wave.png" alt="" /></div>
+
+  <main class="app ev-app">
+    <header>
+      <p class="ev-symposium">CITI WEALTH SYMPOSIUM</p>
+      <img class="ev-title" src="assets/image/title.png" alt="Tennis Challenge" />
+      <p class="ev-tagline">PLAY <i>•</i> COMPETE <i>•</i> CONNECT</p>
+      <img class="ev-logo" src="assets/image/logo.png" alt="Citi | Mastercard" />
     </header>
 
-    <section class="lb-card">
-      <div class="now-card">
-        <div class="now-label">NOW PLAYING</div>
-        <div class="now-name" id="now-name">–</div>
-        <div class="now-sub" id="now-sub">–</div>
-        <button class="btn-big btn-skip" onclick="skip()">Skip ⏭ (panggil berikut FIFO)</button>
-      </div>
+    <section class="ev-card">
+      <div class="now-label">NOW PLAYING</div>
+      <div class="now-name" id="now-name">–</div>
+      <div class="now-sub" id="now-sub">–</div>
+      <button class="ev-btn" onclick="skip()">SKIP ⏭ NEXT IN LINE</button>
     </section>
 
-    <section class="lb-card">
-      <h3 style="font-size:15px;font-weight:800">⏳ ANTRIAN (<span id="q-count">0</span>) — tap ▶ untuk mainkan</h3>
+    <section class="ev-card">
+      <div class="q-head"><h3>QUEUE (<span id="q-count">0</span>)</h3></div>
       <div id="q-list"></div>
-      <p class="refresh-note" style="text-align:center;font-size:11px;color:var(--text-dim);margin-top:12px">Live · <span id="last-upd"></span></p>
+      <p class="live-note">TAP ▶ TO PLAY · LIVE · <span id="last-upd"></span></p>
     </section>
   </main>
 
@@ -84,15 +113,15 @@
           $('#now-sub').textContent = 'Playing… 🎾';
         } else {
           $('#now-name').textContent = '–';
-          $('#now-sub').textContent = s.total_waiting ? 'Siap dipanggil ↓' : 'Belum ada pemain';
+          $('#now-sub').textContent = s.total_waiting ? 'Ready to call ↓' : 'No players yet';
         }
         $('#q-count').textContent = s.total_waiting;
         $('#q-list').innerHTML = s.waiting.map((w) =>
           `<div class="q-row"><span class="n">#${w.position}</span>` +
           `<span class="who"><b>${esc(w.display_name || w.username)}</b><span>${esc(w.created_at || '')}</span></span>` +
-          `<button class="btn-play" onclick="pick('${esc(w.username)}')">▶</button>` +
+          `<button class="btn-play-q" onclick="pick('${esc(w.username)}')">▶</button>` +
           `<button class="btn-x" onclick="removeQ('${esc(w.username)}')">✕</button></div>`
-        ).join('') || '<p class="link-sub">Antrian kosong.</p>';
+        ).join('') || '<p class="q-empty">Queue empty.</p>';
         $('#last-upd').textContent = 'updated ' + new Date().toLocaleTimeString();
       } catch (e) { toast(e.message); }
     }
@@ -100,10 +129,10 @@
     async function pick(username, force) {
       try {
         const r = await api('/api/queue/pick', { method: 'POST', body: JSON.stringify({ username, force: !!force }) });
-        toast(`${r.current.user.username} naik! 🎾`);
+        toast(`${r.current.user.username} is playing! 🎾`);
       } catch (e) {
         if (e.data && e.data.need_force) {
-          if (confirm(`${e.message}\n\nPaksa ganti pemain?`)) return pick(username, true);
+          if (confirm(`${e.message}\n\nForce switch player?`)) return pick(username, true);
           return;
         }
         toast(e.message);
@@ -114,13 +143,13 @@
     async function skip() {
       try {
         const r = await api('/api/queue/next', { method: 'POST' });
-        toast(r.current ? `${r.current.user.username} naik!` : 'Antrian kosong');
+        toast(r.current ? `${r.current.user.username} is playing!` : 'Queue empty');
       } catch (e) { toast(e.message); }
       refresh();
     }
 
     async function removeQ(username) {
-      if (!confirm(`Keluarkan ${username} dari antrian?`)) return;
+      if (!confirm(`Remove ${username} from queue?`)) return;
       try {
         await api('/api/admin/queue/remove', { method: 'POST', body: JSON.stringify({ username }) });
       } catch (e) { toast(e.message); }

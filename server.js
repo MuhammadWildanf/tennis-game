@@ -421,6 +421,7 @@ app.get('/api/unity/info', (req, res) => {
 // Flow: player scans STATIC QR ({BASE}/join) -> alias -> join queue.
 // Usher picks via /queue, Unity polls state + claim-turn, score ends turn.
 // Each turn gets a FRESH turn token, so /api/score stays unchanged.
+// Full catalog: /docs (HTML page).
 
 function queuePosition(userId) {
   const me = db.prepare('SELECT * FROM queue WHERE user_id = ?').get(userId);

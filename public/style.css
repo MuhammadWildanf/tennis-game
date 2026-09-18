@@ -1,3 +1,19 @@
+/* ─── Designer fonts (Citi Tennis Challenge) ─── */
+@font-face {
+  font-family: 'Basenji';
+  src: url('assets/fonts/Basenji-SemiBold.otf') format('opentype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Astonpoliz';
+  src: url('assets/fonts/Astonpoliz.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   --navy-1: #0a1a3f;
   --navy-2: #0d2350;

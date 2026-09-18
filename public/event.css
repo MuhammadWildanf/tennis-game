@@ -1,0 +1,113 @@
+/* ─── Tema event Citi Tennis Challenge (mobile-first, dipakai /, /join, /scoreboard) ─── */
+.ev-body {
+  font-family: 'Basenji', system-ui, sans-serif;
+  background: #06255e url('assets/image/bg.png') center / cover no-repeat fixed;
+}
+.ev-veil {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background: url('assets/image/overlay-bg.png') center / cover no-repeat;
+}
+.ev-footwave {
+  position: fixed; right: 0; bottom: 0; z-index: 1; pointer-events: none;
+  width: 100%; height: 150px; overflow: hidden;
+}
+.ev-footwave img { float: right; height: 100%; width: auto; max-width: none; }
+
+.ev-app { position: relative; z-index: 2; max-width: 480px; margin: 0 auto; padding: 30px 20px 190px; }
+
+/* header 1–4 */
+.ev-symposium {
+  font-family: 'Astonpoliz', sans-serif;
+  text-align: center; color: #fff;
+  font-size: 19px; letter-spacing: .34em; text-indent: .34em;
+  margin: 6px 0 10px; white-space: nowrap;
+}
+.ev-title { display: block; width: 100%; height: auto; }
+.ev-tagline {
+  font-family: 'Astonpoliz', sans-serif;
+  text-align: center; color: #fff;
+  font-size: 15px; letter-spacing: .22em; text-indent: .22em;
+  margin: 2px 0 14px;
+}
+.ev-tagline i { font-style: normal; color: #7cc4ff; padding: 0 .35em; }
+.ev-logo { display: block; width: 190px; height: auto; margin: 0 auto; }
+
+/* card */
+.ev-card {
+  margin-top: 26px;
+  background: linear-gradient(180deg, rgba(18,72,150,.62) 0%, rgba(84,170,245,.62) 100%);
+  border: 1px solid rgba(255,255,255,.18);
+  border-radius: 30px;
+  padding: 34px 24px 30px;
+  box-shadow: 0 18px 50px rgba(2, 12, 40, .45);
+}
+.ev-card h2 {
+  text-align: center; color: #fff; font-weight: 600;
+  font-size: 33px; line-height: 1.12; letter-spacing: .02em;
+  margin-bottom: 20px;
+}
+/* pill nama / input */
+.ev-pill {
+  width: 100%; border: none; outline: none;
+  background: #0a2a6e; color: #fff;
+  border-radius: 999px; padding: 18px 20px;
+  font-family: inherit; font-weight: 600; font-size: 22px; letter-spacing: .05em;
+  text-align: center; text-transform: uppercase;
+  display: block;
+}
+input.ev-pill::placeholder { color: rgba(255,255,255,.45); }
+input.ev-pill.err { box-shadow: 0 0 0 3px #e1251b; }
+.ev-hint {
+  font-family: 'Astonpoliz', sans-serif;
+  text-align: center; color: rgba(255,255,255,.92);
+  font-size: 15px; letter-spacing: .04em; margin-top: 12px;
+}
+/* tombol 6 */
+.ev-btn {
+  display: block; width: 86%; margin: 16px auto 0;
+  background: #fff; color: #0a2a6e;
+  border: 4px solid #e1251b; border-radius: 999px;
+  font-family: inherit; font-weight: 600; font-size: 22px; letter-spacing: .04em;
+  padding: 13px 20px; cursor: pointer; text-align: center; text-decoration: none;
+  box-shadow: 0 8px 24px rgba(2, 12, 40, .35);
+}
+.ev-btn:disabled { opacity: .7; cursor: wait; }
+.ev-btn .btn-spinner {
+  display: none; width: 20px; height: 20px; margin: 0 auto;
+  border: 3px solid rgba(10,42,110,.25); border-top-color: #0a2a6e;
+  border-radius: 50%; animation: ev-spin .7s linear infinite;
+}
+@keyframes ev-spin { to { transform: rotate(360deg); } }
+
+/* link kecil antar halaman */
+.ev-links { text-align: center; margin-top: 18px; }
+.ev-links a {
+  font-family: 'Astonpoliz', sans-serif; color: #fff; font-size: 15px;
+  letter-spacing: .1em; text-decoration: none; margin: 0 12px;
+  border-bottom: 1px solid rgba(255,255,255,.5); padding-bottom: 2px;
+}
+
+/* chip pemain */
+.ev-chip {
+  display: flex; align-items: center; gap: 8px;
+  background: rgba(6, 30, 80, .65); border: 1px solid rgba(255,255,255,.25);
+  border-radius: 999px; padding: 6px 8px 6px 6px; margin: 14px auto 0;
+  width: fit-content; max-width: 100%; color: #fff;
+  font-size: 14px; letter-spacing: .06em;
+}
+.ev-chip.hidden { display: none; }
+.ev-chip .chip-avatar {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: #fff; color: #0a2a6e; font-weight: 600;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.ev-chip .chip-best { color: #7cc4ff; }
+.ev-chip button {
+  background: transparent; border: 1px solid rgba(255,255,255,.4); color: #fff;
+  border-radius: 50%; width: 24px; height: 24px; cursor: pointer; font-family: inherit;
+}
+
+@media (min-width: 520px) {
+  .ev-symposium { font-size: 22px; }
+  .ev-card h2 { font-size: 38px; }
+}

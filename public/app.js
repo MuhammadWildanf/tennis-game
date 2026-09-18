@@ -1,11 +1,10 @@
 'use strict';
 
-// ─── State ──────────────────────────────────────────────────────────────────
-let authToken = localStorage.getItem('ct_token') || null;
-let currentUser = null;
-let lbTab = 'global';
+// Halaman alias (/): daftar → langsung ke /join (halaman queue).
+// Leaderboard punya halaman sendiri: /scoreboard.
 
-// ─── Helpers ────────────────────────────────────────────────────────────────
+let authToken = localStorage.getItem('ct_token') || null;
+
 const $ = (sel) => document.querySelector(sel);
 
 async function api(path, options = {}) {
@@ -23,14 +22,13 @@ function escapeHtml(s) {
   }[c]));
 }
 
-// ─── Registration (alias only) ──────────────────────────────────────────────
+// ─── Cek alias ───
 const aliasInput = $('#alias-input');
 const availEl = $('#alias-avail');
 let checkTimer = null;
 let lastChecked = '';
 
 aliasInput.addEventListener('input', () => {
-  // Force uppercase A–Z 0–9
   const clean = aliasInput.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 12);
   if (clean !== aliasInput.value) aliasInput.value = clean;
 
@@ -60,6 +58,7 @@ async function checkAlias(alias) {
   }
 }
 
+// ─── Daftar → ke halaman queue ───
 $('#alias-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   const alias = aliasInput.value.trim().toUpperCase();
@@ -83,9 +82,8 @@ $('#alias-form').addEventListener('submit', async (e) => {
     const data = await api('/api/signup', { method: 'POST', body: JSON.stringify({ username: alias }) });
     authToken = data.token;
     localStorage.setItem('ct_token', authToken);
-    currentUser = data.user;
-    enterApp();
-    showToast(`Welcome to the court, ${data.user.username}! 🎾`);
+    localStorage.setItem('ct_user', data.user.username);
+    location.href = '/join';
   } catch (err) {
     errEl.textContent = err.message;
     errEl.classList.add('show');
@@ -95,7 +93,8 @@ $('#alias-form').addEventListener('submit', async (e) => {
 });
 
 function setLoading(btn, loading) {
-  btn.querySelector('.btn-label').textContent = loading ? '' : 'Ready';
+  if (!btn.dataset.label) btn.dataset.label = btn.querySelector('.btn-label').textContent;
+  btn.querySelector('.btn-label').textContent = loading ? '' : btn.dataset.label;
   btn.querySelector('.btn-spinner').style.display = loading ? 'inline-block' : 'none';
   btn.disabled = loading;
 }
@@ -103,92 +102,11 @@ function setLoading(btn, loading) {
 function logout() {
   if (authToken) api('/api/logout', { method: 'POST' }).catch(() => {});
   authToken = null;
-  currentUser = null;
   localStorage.removeItem('ct_token');
   location.reload();
 }
 
-// ─── Enter app ──────────────────────────────────────────────────────────────
-function enterApp() {
-  $('#regis-section').classList.add('hidden');
-  $('#join-section').classList.remove('hidden');
-
-  $('#player-chip').classList.remove('hidden');
-  $('#chip-avatar').textContent = currentUser.username.charAt(0);
-  $('#chip-name').textContent = currentUser.username;
-  $('#chip-best').textContent = `BEST ${currentUser.best_score ?? 0}`;
-
-  loadLeaderboard();
-}
-
-// ─── Leaderboard (auto-refresh so Mobile shows new scores after End Game) ────
-const LB_REFRESH_MS = 15000;
-setInterval(() => {
-  if (!document.hidden) loadLeaderboard();
-}, LB_REFRESH_MS);
-
-function switchLbTab(tab) {
-  lbTab = tab;
-  document.querySelectorAll('.lb-tab').forEach((t) => t.classList.toggle('active', t.dataset.tab === tab));
-  loadLeaderboard();
-}
-
-async function loadLeaderboard() {
-  try {
-    if (lbTab === 'friends') {
-      if (!currentUser) {
-        renderEmpty('Register your alias above to see your rank among friends.');
-        return;
-      }
-      const data = await api('/api/leaderboard/around');
-      if (!data.players.length) {
-        renderEmpty('Play a match first — your rank will show up here.');
-        return;
-      }
-      renderRows(data.players, true);
-    } else {
-      const data = await api('/api/leaderboard?sort=best_score');
-      if (!data.length) {
-        renderEmpty('No scores yet — be the first on the board!');
-        return;
-      }
-      renderRows(data.map((p, i) => ({ ...p, rank: i + 1 })), false);
-    }
-  } catch (err) {
-    showToast('Failed to load leaderboard: ' + err.message);
-  }
-}
-
-function renderEmpty(text) {
-  $('#lb-list').innerHTML = '';
-  $('#lb-empty-text').textContent = text;
-  $('#lb-empty').classList.remove('hidden');
-}
-
-function renderRows(players, showYou) {
-  $('#lb-empty').classList.add('hidden');
-  const list = $('#lb-list');
-  list.innerHTML = '';
-
-  players.forEach((p) => {
-    const rank = p.rank;
-    const isYou = showYou && currentUser && p.id === currentUser.id
-      || !showYou && currentUser && p.username === currentUser.username;
-
-    const li = document.createElement('li');
-    li.className = 'lb-row' + (rank === 1 ? ' first' : '') + (isYou ? ' you' : '');
-
-    const rankCell = rank === 1 ? '👑' : rank;
-    li.innerHTML =
-      `<span class="rank">${rankCell}</span>` +
-      `<span class="name">${escapeHtml(p.display_name || p.username)}${isYou ? '<span class="you-tag">YOU</span>' : ''}</span>` +
-      `<span class="score">${p.best_score}</span>`;
-
-    list.appendChild(li);
-  });
-}
-
-// ─── Toast ──────────────────────────────────────────────────────────────────
+// ─── Toast ───
 let toastTimer = null;
 function showToast(text) {
   const toast = $('#toast');
@@ -198,19 +116,13 @@ function showToast(text) {
   toastTimer = setTimeout(() => toast.classList.add('hidden'), 3000);
 }
 
-// ─── Boot ───────────────────────────────────────────────────────────────────
+// ─── Boot: sudah daftar → langsung ke halaman queue ───
 (function init() {
-  loadLeaderboard();
-
-  if (authToken) {
-    api('/api/profile')
-      .then((user) => {
-        currentUser = user;
-        enterApp();
-      })
-      .catch(() => {
-        localStorage.removeItem('ct_token');
-        authToken = null;
-      });
-  }
+  if (!authToken) return;
+  api('/api/profile')
+    .then(() => location.replace('/join'))
+    .catch(() => {
+      localStorage.removeItem('ct_token');
+      authToken = null;
+    });
 })();

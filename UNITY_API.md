@@ -170,8 +170,10 @@ QR statis `/join` boleh dipasang di mana saja (game, poster, pintu masuk) — se
 | `/join` | halaman HP: alias → nomor antrian → thanks + Play Again (usher yang mulai game) |
 | `/queue` | halaman staff: Now Playing + antrian + tombol ▶/Skip/✕, auto-refresh |
 | `/display` | **layar game versi browser**: QR besar + Now Playing + antrian + Top 5, auto-refresh. Buka fullscreen (F11) — Unity tidak perlu bikin UI QR sama sekali |
-| `/` | halaman utama + leaderboard (auto-refresh 15 detik) |
+| `/` | halaman HP: alias → otomatis ke `/join` |
+| `/scoreboard` | leaderboard live (auto-refresh 15 detik) |
 | `/admin.html` | dashboard staff: stats, antrian live (+ tendang ✕), match, QR cetak |
+| `/docs` | dokumentasi API halaman polos (5 grup, 29 endpoint) |
 
 ---
 
@@ -239,5 +241,5 @@ IEnumerator SubmitScore(int score, string result) {
 
 - [ ] Kunci static IP PC server · buka firewall inbound TCP 2000 · catat IP LAN
 - [ ] `npm run reset-db` (server mati) → leaderboard bersih
-- [ ] Tes scan 1–3 m · tes 2 HP barengan · cek `/admin` terbuka
+- [ ] Tes scan 1–3 m · tes 2 HP barengan · cek `/admin.html` terbuka
 - [ ] Hari-H: `npm start` → buka `/display` fullscreen + `/admin` di tab sebelah → `npm run backup-db` tiap istirahat

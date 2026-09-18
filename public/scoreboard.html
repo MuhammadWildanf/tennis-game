@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Leaderboards — Tennis Challenge</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="event.css" />
+  <style>
+    .sb-title { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+    .sb-title svg { width: 52px; height: 52px; flex: none; }
+    .sb-title h2 { color: #fff; font-weight: 600; font-size: 29px; letter-spacing: .02em; }
+    .sb-head {
+      display: grid; grid-template-columns: 52px 1fr auto;
+      font-family: 'Astonpoliz', sans-serif; font-size: 13px; letter-spacing: .12em;
+      color: rgba(255,255,255,.85); padding: 0 18px; margin-bottom: 6px;
+    }
+    .sb-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+    .sb-row {
+      display: grid; grid-template-columns: 52px 1fr auto; align-items: center;
+      background: #fff; border: 3px solid transparent; border-radius: 999px;
+      padding: 9px 18px 9px 0; color: #101010;
+    }
+    .sb-row.top3 { border-color: #e1251b; }
+    .sb-row .rank { color: #e1251b; font-size: 19px; text-align: center; }
+    .sb-row:not(.top3) .rank { color: #8a6d00; }
+    .sb-row .name {
+      font-family: 'Basenji', sans-serif; font-size: 17px; letter-spacing: .02em;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      border-left: 3px solid #e1251b; border-right: 3px solid #e1251b;
+      padding: 0 10px;
+    }
+    .sb-row .score { font-family: 'Basenji', sans-serif; font-size: 17px; padding-left: 10px; white-space: nowrap; }
+    .sb-row .score::after { content: ' PTS'; }
+    .sb-row.you { box-shadow: 0 0 0 3px #7cc4ff; }
+    .sb-empty { text-align: center; color: #fff; font-size: 15px; padding: 14px 0; }
+    .sb-note { text-align: center; font-size: 11px; color: rgba(255,255,255,.6); margin-top: 12px; font-family: 'Astonpoliz', sans-serif; letter-spacing: .08em; }
+  </style>
+</head>
+<body class="ev-body">
+  <div class="ev-veil" aria-hidden="true"></div>
+  <div class="ev-footwave" aria-hidden="true"><img src="assets/image/footer-wave.png" alt="" /></div>
+
+  <main class="app ev-app">
+    <header>
+      <p class="ev-symposium">CITI WEALTH SYMPOSIUM</p>
+      <img class="ev-title" src="assets/image/title.png" alt="Tennis Challenge" />
+      <p class="ev-tagline">PLAY <i>•</i> COMPETE <i>•</i> CONNECT</p>
+      <img class="ev-logo" src="assets/image/logo.png" alt="Citi | Mastercard" />
+    </header>
+
+    <!-- Halaman 3: leaderboard -->
+    <section class="ev-card">
+      <div class="sb-title">
+        <svg viewBox="0 0 64 64" aria-hidden="true">
+          <path fill="#fff" d="M20 8h24v6h8v4c0 7-5 12.5-12 13.4A12 12 0 0 1 35 40.6V48h6v6H23v-6h6v-7.4a12 12 0 0 1-5-9.2C17 30.5 12 25 12 18v-4h8V8zm-4 12c0 4.5 3 8.3 7 9.4A16 16 0 0 1 24 20h-8zm32 0h-8a16 16 0 0 1-1 9.4c4-1.1 7-4.9 7-9.4z"/>
+        </svg>
+        <h2>LEADERBOARDS</h2>
+      </div>
+      <div class="sb-head"><span>POS</span><span>NAME</span><span>SCORE</span></div>
+      <div id="sb-empty" class="sb-empty hidden"><p>No scores yet — be the first on the board!</p></div>
+      <ul id="sb-list" class="sb-list"></ul>
+      <p class="sb-note">LIVE · <span id="sb-upd"></span></p>
+    </section>
+
+    <nav class="ev-links">
+      <a href="/">← ALIAS</a>
+      <a href="/join">QUEUE →</a>
+    </nav>
+  </main>
+
+  <script>
+    'use strict';
+    const $ = (s) => document.querySelector(s);
+    const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const me = localStorage.getItem('ct_user') || null;
+
+    async function tick() {
+      try {
+        const lb = await (await fetch('/api/leaderboard?sort=best_score&limit=10')).json();
+        $('#sb-empty').classList.toggle('hidden', lb.length > 0);
+        $('#sb-list').innerHTML = lb.map((p) =>
+          `<li class="sb-row${p.rank <= 3 ? ' top3' : ''}${me && p.username === me ? ' you' : ''}">` +
+          `<span class="rank"># ${p.rank}</span>` +
+          `<span class="name">${esc(p.display_name || p.username)}</span>` +
+          `<span class="score">${p.best_score}</span></li>`
+        ).join('');
+        $('#sb-upd').textContent = 'updated ' + new Date().toLocaleTimeString();
+      } catch (_) {}
+    }
+    tick();
+    setInterval(() => { if (!document.hidden) tick(); }, 15000);
+  </script>
+</body>
+</html>

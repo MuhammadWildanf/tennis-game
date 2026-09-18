@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>API Docs — Tennis Challenge</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+      background: #f4f6f9;
+      color: #1a1a1a;
+      line-height: 1.5;
+    }
+
+    main {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 32px 20px 60px;
+    }
+
+    h1 {
+      font-size: 24px;
+      margin-bottom: 4px;
+    }
+
+    .ver {
+      color: #666;
+      font-size: 13px;
+      margin-bottom: 12px;
+    }
+
+    .flow {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 12px 14px;
+      font-size: 14px;
+      margin-bottom: 8px;
+    }
+
+    h2 {
+      font-size: 17px;
+      margin: 26px 0 8px;
+      padding-bottom: 4px;
+      border-bottom: 2px solid #0a2a6e;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    th,
+    td {
+      padding: 8px 10px;
+      border-bottom: 1px solid #eee;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: #0a2a6e;
+      color: #fff;
+      font-size: 11px;
+      letter-spacing: .05em;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    .m {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      border-radius: 4px;
+      padding: 1px 7px;
+      white-space: nowrap;
+    }
+
+    .m.GET {
+      background: #e6f6ec;
+      color: #137333;
+    }
+
+    .m.POST {
+      background: #e8f0fe;
+      color: #1a56db;
+    }
+
+    code.p {
+      font-family: Consolas, monospace;
+      font-size: 12px;
+      color: #7a4d00;
+      word-break: break-all;
+    }
+
+    .auth {
+      font-size: 12px;
+      color: #555;
+      white-space: nowrap;
+    }
+
+    details.samp {
+      margin-top: 6px;
+    }
+
+    details.samp summary {
+      cursor: pointer;
+      font-size: 12px;
+      color: #1a56db;
+    }
+
+    details.samp pre {
+      margin-top: 6px;
+      background: #0e1526;
+      color: #d6e4ff;
+      border-radius: 6px;
+      padding: 10px 12px;
+      font-size: 12px;
+      overflow-x: auto;
+      white-space: pre;
+    }
+
+    nav {
+      margin-top: 28px;
+      font-size: 14px;
+    }
+
+    nav a {
+      color: #0a2a6e;
+      margin-right: 16px;
+    }
+  </style>
+</head>
+
+<body>
+  <main>
+    <h1>Dokumentasi API — Tennis Challenge</h1>
+    <p class="ver" id="doc-ver"></p>
+    <p class="flow" id="doc-flow"></p>
+    <div id="doc-groups"></div>
+  </main>
+
+  <script>
+    'use strict';
+    const $ = (s) => document.querySelector(s);
+    const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+    const DOCS = {
+      version: '1.1.0',
+      flow: 'Pemain scan QR statis → daftar alias → masuk antrian → usher pick di /queue → Unity claim-turn → langsung main → score tercatat atas nama picked player.',
+      groups: [
+        {
+          name: 'Unity (game client — usher-driven)',
+          endpoints: [
+            {
+              method: 'GET', path: '/api/status', auth: 'tidak', desc: 'Boot check: server hidup + versi.',
+              sample: { res: { ok: true, version: '1.1.0', server_time: '2026-09-17T11:19:15.642Z' } }
+            },
+            {
+              method: 'GET', path: '/qr/join.png', auth: 'tidak', desc: 'Gambar QR statis (isi = alamat /join). Tampilkan di layar idle; boleh dicetak.',
+              sample: { res: '(file PNG, bukan JSON)' }
+            },
+            {
+              method: 'GET', path: '/api/queue/state', auth: 'tidak', desc: 'Polling tiap 2 detik: siapa main + antrian.',
+              sample: { res: { current: { username: 'A', display_name: 'A', best_score: 120, ready: 1, turn_started_at: '2026-09-17 11:30:14' }, waiting: [{ position: 2, username: 'B', display_name: 'B', created_at: '2026-09-17 11:30:14' }], total_waiting: 1 } }
+            },
+            {
+              method: 'POST', path: '/api/queue/claim-turn', auth: 'tidak', desc: 'Begitu current baru muncul: ambil token giliran (OVERWRITE token lama) → langsung mulai game. 404 = belum ada yang main, 409 = giliran sudah selesai.',
+              sample: { req: '(tanpa body)', res: { token: '59ef92ee-…', user: { id: '…', username: 'A', display_name: 'A' } } }
+            },
+            {
+              method: 'POST', path: '/api/score', auth: 'Bearer token giliran', desc: 'Sukses = token hangus + station bebas. 401 = sudah masuk, jangan resubmit.',
+              sample: { req: { score: 500, result: 'win', opponent: 'AI' }, res: { success: true, match_id: '867c7eb2-…' } }
+            },
+            {
+              method: 'GET', path: '/api/leaderboard?sort=best_score&limit=10', auth: 'tidak', desc: 'Layar leaderboard, refresh 15–30 detik.',
+              sample: { res: [{ rank: 1, username: 'A', display_name: 'A', total_matches: 1, wins: 1, losses: 0, total_score: 500, best_score: 500, win_rate: 100 }] }
+            },
+            {
+              method: 'GET', path: '/api/profile', auth: 'Bearer token apa saja', desc: 'Opsional: verifikasi token / best score.',
+              sample: { res: { id: '…', username: 'A', display_name: 'A', total_matches: 1, wins: 1, losses: 0, total_score: 500, best_score: 500, created_at: '…', last_played: '…' } }
+            },
+            {
+              method: 'GET', path: '/api/unity/info', auth: 'tidak', desc: 'Kontrak mesin khusus Unity (ringkas, JSON).',
+              sample: { res: { version: '1.1.0', http_base: 'http://…:2000', recommended_flow: 'queue + staff pick (usher-driven)', unity_uses_only_these: ['…7 endpoint…'], unity_never_calls: 'POST /api/queue/next, POST /api/queue/pick', queue: '…aturan main…' } }
+            }
+          ]
+        },
+        {
+          name: 'Pemain (HP)',
+          endpoints: [
+            {
+              method: 'POST', path: '/api/signup', auth: 'tidak', desc: 'Dipakai sekali per alias.',
+              sample: { req: { username: 'JAMES' }, res: { success: true, token: 'uuid-…', user: { id: '…', username: 'JAMES', display_name: 'JAMES' } } }
+            },
+            {
+              method: 'POST', path: '/api/queue/join', auth: 'Bearer token HP', desc: 'Masuk antrian (idempotent).',
+              sample: { req: '(tanpa body)', res: { success: true, user: { username: 'JAMES', display_name: 'JAMES' }, in_queue: true, status: 'waiting', position: 2, ahead: 1, station_idle: true } }
+            },
+            {
+              method: 'GET', path: '/api/queue/my-status', auth: 'Bearer token HP', desc: 'Posisi live (polling HP ±3 detik).',
+              sample: { res: { in_queue: true, status: 'waiting', position: 2, ahead: 1, station_idle: true } }
+            },
+            {
+              method: 'POST', path: '/api/queue/leave', auth: 'Bearer token HP', desc: 'Keluar antrian.',
+              sample: { req: '(tanpa body)', res: { success: true } }
+            },
+            {
+              method: 'POST', path: '/api/login', auth: 'tidak', desc: 'Hanya untuk alias ber-password (umumnya tidak dipakai event).',
+              sample: { req: { username: 'JAMES', password: '…' }, res: { success: true, token: 'uuid-…', user: { username: 'JAMES', best_score: 120 } } }
+            },
+            {
+              method: 'POST', path: '/api/logout', auth: 'Bearer token HP', desc: 'Hapus sesi login.',
+              sample: { req: '(tanpa body)', res: { success: true } }
+            },
+            {
+              method: 'GET', path: '/api/check-username/:username', auth: 'tidak', desc: 'Cek alias tersedia.',
+              sample: { res: { available: false, username: 'JAMES' } }
+            }
+          ]
+        },
+        {
+          name: 'Usher / Staff (halaman /queue — Unity JANGAN panggil)',
+          endpoints: [
+            {
+              method: 'POST', path: '/api/queue/pick', auth: 'tidak (LAN)', desc: 'Pilih pemain mana saja. 409 + need_force kalau ada yang sedang main.',
+              sample: { req: { username: 'B' }, res: { current: { token: 'uuid-…', user: { id: '…', username: 'B', display_name: 'B' } }, waiting_count: 2 } }
+            },
+            {
+              method: 'POST', path: '/api/queue/next', auth: 'tidak (LAN)', desc: 'Tombol Skip: majukan FIFO.',
+              sample: { req: '(tanpa body)', res: { current: { token: 'uuid-…', user: { username: 'B' } }, waiting_count: 1 } }
+            }
+          ]
+        },
+        {
+          name: 'Admin (dashboard — LAN, tanpa key)',
+          endpoints: [
+            {
+              method: 'GET', path: '/api/admin/stats', auth: 'tidak (LAN)', desc: 'Statistik.',
+              sample: { res: { users_total: 10, users_played: 8, matches_total: 12, wins: 7, server_time: '…' } }
+            },
+            {
+              method: 'GET', path: '/api/admin/matches', auth: 'tidak (LAN)', desc: '50 match terakhir.',
+              sample: { res: [{ id: '…', score: 500, result: 'win', opponent: 'AI', played_at: '…', username: 'A', display_name: 'A' }] }
+            },
+            {
+              method: 'GET', path: '/api/admin/queue', auth: 'tidak (LAN)', desc: 'Isi antrian live.',
+              sample: { res: [{ id: 3, status: 'waiting', created_at: '…', updated_at: '…', ready_at: null, username: 'B', display_name: 'B' }] }
+            },
+            {
+              method: 'POST', path: '/api/admin/queue/remove', auth: 'tidak (LAN)', desc: 'Keluarkan dari antrian.',
+              sample: { req: { username: 'B' }, res: { success: true, username: 'B' } }
+            }
+          ]
+        },
+        {
+          name: 'Halaman web',
+          endpoints: [
+            { method: 'GET', path: '/', auth: '—', desc: 'Alias → otomatis ke /join.' },
+            { method: 'GET', path: '/join', auth: '—', desc: 'HP pemain: alias → nomor antrian → thanks + Play Again.' },
+            { method: 'GET', path: '/queue', auth: '—', desc: 'Usher: Now Playing + antrian + tombol ▶/Skip/✕.' },
+            { method: 'GET', path: '/scoreboard', auth: '—', desc: 'Leaderboard live.' },
+            { method: 'GET', path: '/display', auth: '—', desc: 'Layar venue: QR + Now Playing + antrian + Top 5.' },
+            { method: 'GET', path: '/admin.html', auth: '—', desc: 'Dashboard staff.' },
+            { method: 'GET', path: '/unity-sim.html', auth: '—', desc: 'Simulator stasiun Unity (testing).' },
+            { method: 'GET', path: '/docs', auth: '—', desc: 'Halaman ini.' }
+          ]
+        }
+      ]
+    };
+
+    (function render() {
+      $('#doc-ver').textContent = 'v' + DOCS.version + ' · ' + location.origin;
+      $('#doc-flow').textContent = DOCS.flow;
+      $('#doc-groups').innerHTML = DOCS.groups.map((g) =>
+        `<h2>${esc(g.name)}</h2>` +
+        `<table><tr><th>METODE</th><th>PATH</th><th>AUTH</th><th>KETERANGAN + CONTOH JSON</th></tr>` +
+        g.endpoints.map((e) =>
+          `<tr><td><span class="m ${esc(e.method)}">${esc(e.method)}</span></td>` +
+          `<td><code class="p">${esc(e.path)}</code></td>` +
+          `<td class="auth">${esc(e.auth)}</td><td>${esc(e.desc)}` +
+          (e.sample
+            ? `<details class="samp"><summary>Contoh JSON</summary><pre>${esc(JSON.stringify(e.sample, null, 1))}</pre></details>`
+            : '') +
+          `</td></tr>`
+        ).join('') + `</table>`
+      ).join('');
+    })();
+  </script>
+</body>
+
+</html>
