@@ -13,16 +13,28 @@
 }
 .ev-footwave img { float: right; height: 100%; width: auto; max-width: none; }
 
-.ev-app { position: relative; z-index: 2; max-width: 430px; margin: 0 auto; padding: 30px 20px 190px; }
+.ev-app { position: relative; z-index: 2; max-width: 430px; margin: 0 auto; padding: 30px 20px 190px; overflow-x: clip; }
+.ev-app img { max-width: 100%; }
+.ev-footwave img { max-width: none; }
 
 /* Di layar PC: kunci selebar HP (kolom tengah ala phone) */
-@media (min-width: 560px) {
+@media (min-width: 560px) and (max-width: 1023px) {
   .ev-app {
     min-height: 100svh;
     border-left: 1px solid rgba(255,255,255,.14);
     border-right: 1px solid rgba(255,255,255,.14);
     box-shadow: 0 0 60px rgba(0, 0, 0, .5);
   }
+}
+
+/* PC/layar lebar: manfaatkan ruang — header ramping, card sejajar */
+@media (min-width: 1024px) {
+  .ev-app { max-width: 1024px; }
+  .ev-app > header .ev-title { max-width: 620px; margin: 0 auto; }
+  .ev-app > header .ev-logo { width: 210px; }
+  .ev-card { max-width: 600px; margin-left: auto; margin-right: auto; }
+  .ev-cols { display: grid; grid-template-columns: 1.05fr 1fr; gap: 20px; align-items: start; margin-top: 26px; }
+  .ev-cols .ev-card { max-width: none; margin: 0; }
 }
 
 /* header 1–4 */
