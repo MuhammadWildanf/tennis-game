@@ -1,0 +1,107 @@
+{
+  "info": {
+    "name": "Tennis Challenge",
+    "description": "Usher-driven flow: signup → join → pick (usher) → claim-turn (Unity) → score. Token HP & token giliran nyambung otomatis antar request. Base URL: https://tennis-challenge.imajiwa.id (ganti di variable \"base\" untuk lokal: http://localhost:2000).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base", "value": "https://tennis-challenge.imajiwa.id" },
+    { "key": "hp_token", "value": "" },
+    { "key": "turn_token", "value": "" },
+    { "key": "picked_user", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "1. Status (cek server)",
+      "request": { "method": "GET", "url": "{{base}}/api/status" }
+    },
+    {
+      "name": "2. Signup alias (HP)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "var j = pm.response.json();",
+              "if (j.token) pm.collectionVariables.set('hp_token', j.token);",
+              "if (j.user) pm.collectionVariables.set('picked_user', j.user.username);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{base}}/api/signup",
+        "body": { "mode": "raw", "raw": "{\n  \"username\": \"T{{$randomInt}}\"\n}" }
+      }
+    },
+    {
+      "name": "3. Join queue (HP)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{hp_token}}" }
+        ],
+        "url": "{{base}}/api/queue/join"
+      }
+    },
+    {
+      "name": "4. My status (HP)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{hp_token}}" }],
+        "url": "{{base}}/api/queue/my-status"
+      }
+    },
+    {
+      "name": "5. Queue state (Unity polling 2 detik)",
+      "request": { "method": "GET", "url": "{{base}}/api/queue/state" }
+    },
+    {
+      "name": "6. Pick pemain (Usher)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{base}}/api/queue/pick",
+        "body": { "mode": "raw", "raw": "{\n  \"username\": \"{{picked_user}}\"\n}" }
+      }
+    },
+    {
+      "name": "7. Claim turn (Unity)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "var j = pm.response.json();",
+              "if (j.token) pm.collectionVariables.set('turn_token', j.token);"
+            ]
+          }
+        }
+      ],
+      "request": { "method": "POST", "url": "{{base}}/api/queue/claim-turn" }
+    },
+    {
+      "name": "8. Submit score (Unity)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{turn_token}}" }
+        ],
+        "url": "{{base}}/api/score",
+        "body": { "mode": "raw", "raw": "{\n  \"score\": 500,\n  \"result\": \"win\",\n  \"opponent\": \"AI\"\n}" }
+      }
+    },
+    {
+      "name": "9. Leaderboard",
+      "request": { "method": "GET", "url": "{{base}}/api/leaderboard?sort=best_score&limit=10" }
+    },
+    {
+      "name": "10. Unity info (kontrak mesin)",
+      "request": { "method": "GET", "url": "{{base}}/api/unity/info" }
+    }
+  ]
+}
