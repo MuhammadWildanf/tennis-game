@@ -13,7 +13,17 @@
 }
 .ev-footwave img { float: right; height: 100%; width: auto; max-width: none; }
 
-.ev-app { position: relative; z-index: 2; max-width: 480px; margin: 0 auto; padding: 30px 20px 190px; }
+.ev-app { position: relative; z-index: 2; max-width: 430px; margin: 0 auto; padding: 30px 20px 190px; }
+
+/* Di layar PC: kunci selebar HP (kolom tengah ala phone) */
+@media (min-width: 560px) {
+  .ev-app {
+    min-height: 100svh;
+    border-left: 1px solid rgba(255,255,255,.14);
+    border-right: 1px solid rgba(255,255,255,.14);
+    box-shadow: 0 0 60px rgba(0, 0, 0, .5);
+  }
+}
 
 /* header 1–4 */
 .ev-symposium {
