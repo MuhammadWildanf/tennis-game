@@ -214,12 +214,16 @@
 
     async function tryReady() {
       try {
-        const st = await api('/api/queue/state');
-        if (st.current) {
-          Swal.fire({ icon: 'info', title: 'Please wait', text: `Someone is playing as ${st.current.username} — please wait for your turn.`, confirmButtonColor: '#0a2a6e' });
+        const r = await api('/api/queue/compete', { method:'POST' });
+        if (r.reason === 'playing') {
+          Swal.fire({ icon: 'info', title: 'Please wait', text: `Someone is playing — please wait for your turn.`, confirmButtonColor: '#0a2a6e' });
           return;
         }
-        Swal.fire({ icon: 'success', title: 'Ready!', text: 'Please wait — your game will start soon. 🎾', confirmButtonColor: '#0a2a6e' });
+        if (r.winner) {
+          Swal.fire({ icon: 'success', title: 'You won!', text: 'You are the fastest! Waiting for usher to start your game. 🎾', confirmButtonColor: '#0a2a6e' });
+        } else {
+          Swal.fire({ icon: 'info', title: 'Please wait', text: `Fastest is ${r.winner_username} — please wait for your turn.`, confirmButtonColor: '#0a2a6e' });
+        }
       } catch (e) { Swal.fire({ icon: 'error', title: 'Error', text: e.message, confirmButtonColor: '#0a2a6e' }); }
     }
 

@@ -64,6 +64,16 @@ db.exec(`
     updated_at TEXT DEFAULT (datetime('now')),
     FOREIGN KEY (user_id) REFERENCES users(id)
   );
+
+  CREATE TABLE IF NOT EXISTS play_clicks (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id TEXT NOT NULL,
+    username TEXT NOT NULL,
+    round INTEGER NOT NULL,
+    click_at TEXT DEFAULT (datetime('now')),
+    click_ms INTEGER NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+  );
 `);
 
 // Safe migration for DBs created before queue.ready_at existed
@@ -475,7 +485,7 @@ app.post('/api/queue/leave', authMiddleware, (req, res) => {
   res.json({ success: true });
 });
 
-// Unity (public, like leaderboard): who's playing + who's waiting
+// Unity (public, like leaderboard): who's playing + who's waiting (show only 1 fastest when idle)
 app.get('/api/queue/state', (req, res) => {
   const current = db.prepare(`
     SELECT u.username, u.display_name, u.best_score, q.created_at,
@@ -484,12 +494,18 @@ app.get('/api/queue/state', (req, res) => {
     FROM queue q JOIN users u ON u.id = q.user_id
     WHERE q.status = 'current'
   `).get() || null;
-  const waiting = db.prepare(`
+  let waiting = db.prepare(`
     SELECT u.username, u.display_name, q.created_at
     FROM queue q JOIN users u ON u.id = q.user_id
     WHERE q.status = 'waiting'
     ORDER BY q.id ASC
   `).all().map((p, i) => ({ position: (current ? 1 : 0) + i + 1, ...p }));
+  // Rebutan mode: when idle, show only 1 fastest (smallest click_ms in current round)
+  if (!current && waiting.length > 1) {
+    const r = currentRound;
+    const winner = db.prepare('SELECT username FROM play_clicks WHERE round=? ORDER BY click_ms ASC, id ASC LIMIT 1').get(r);
+    if (winner) waiting = waiting.filter(w => w.username === winner.username).slice(0,1);
+  }
   res.json({ current, waiting, total_waiting: waiting.length });
 });
 
@@ -614,6 +630,59 @@ app.get('/api/admin/queue', (req, res) => {
     WHERE q.status IN ('waiting', 'current')
     ORDER BY q.id ASC
   `).all();
+  res.json(rows);
+});
+
+// Rebutan PLAY after done: player clicks PLAY, fastest wins the next turn.
+// Data kept in play_clicks for comparison (who clicked when).
+let currentRound = 1;
+try { const r = db.prepare('SELECT MAX(round) as m FROM play_clicks').get(); if (r && r.m) currentRound = r.m; } catch(_){}
+function getRound() {
+  const hasCurrent = db.prepare("SELECT 1 FROM queue WHERE status='current'").get();
+  if (!hasCurrent) {
+    const waiting = db.prepare("SELECT COUNT(*) as c FROM queue WHERE status='waiting'").get().c;
+    if (waiting === 0) currentRound += 1;
+  }
+  return currentRound;
+}
+app.post('/api/queue/compete', authMiddleware, (req, res) => {
+  const ms = Date.now();
+  const round = getRound();
+  try { db.prepare('INSERT INTO play_clicks (user_id, username, round, click_ms) VALUES (?,?,?,?)').run(req.user.id, req.user.username, round, ms); } catch(_) {}
+
+  const hasCurrent = db.prepare("SELECT 1 FROM queue WHERE status='current'").get();
+  if (hasCurrent) {
+    const pos = queuePosition(req.user.id);
+    return res.json({ success: false, reason: 'playing', position: pos.position || null, message: 'Someone is playing — please wait' });
+  }
+  // No one playing: pick fastest click in this round (smallest click_ms)
+  const winner = db.prepare('SELECT user_id, username FROM play_clicks WHERE round=? ORDER BY click_ms ASC, id ASC LIMIT 1').get(round);
+  if (!winner) return res.status(500).json({ error: 'No clicks' });
+  const isWinner = winner.user_id === req.user.id;
+  if (isWinner) {
+    // Ensure winner is in queue as waiting, then promote to current
+    const ex = db.prepare('SELECT * FROM queue WHERE user_id=?').get(req.user.id);
+    if (!ex) db.prepare("INSERT INTO queue (user_id, status) VALUES (?, 'waiting')").run(req.user.id);
+    else if (ex.status !== 'waiting' && ex.status !== 'current') db.prepare("UPDATE queue SET status='waiting', ready_at=NULL WHERE user_id=?").run(req.user.id);
+    db.prepare("UPDATE queue SET status='current', ready_at=datetime('now'), updated_at=datetime('now') WHERE user_id=?").run(req.user.id);
+    const token = generateToken();
+    db.prepare("INSERT INTO active_sessions (token, user_id, purpose) VALUES (?, ?, 'turn')").run(token, req.user.id);
+    db.prepare('UPDATE queue SET turn_token=? WHERE user_id=?').run(token, req.user.id);
+    // Clear other clicks for next round
+    currentRound += 1;
+    return res.json({ success: true, winner: true, username: req.user.username, round });
+  } else {
+    const pos = queuePosition(req.user.id);
+    return res.json({ success: true, winner: false, winner_username: winner.username, position: pos.position || null, round });
+  }
+});
+app.get('/api/queue/clicks', (req, res) => {
+  const round = parseInt(req.query.round,10) || currentRound;
+  const rows = db.prepare('SELECT username, click_ms, datetime(click_at) as click_at FROM play_clicks WHERE round=? ORDER BY click_ms ASC').all(round);
+  res.json({ round, clicks: rows });
+});
+app.get('/api/admin/clicks', (req, res) => {
+  const rows = db.prepare('SELECT round, username, click_ms, datetime(click_at) as at FROM play_clicks ORDER BY round DESC, click_ms ASC LIMIT 100').all();
   res.json(rows);
 });
 
