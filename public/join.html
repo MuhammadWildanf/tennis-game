@@ -181,17 +181,21 @@
         const title = $('#queue-title');
         const msg = $('#queue-msg');
         $('#queue-name').textContent = (localStorage.getItem('ct_user') || '').toUpperCase() || '–';
+        const readyBtn = $('#ready-btn');
         if (s.status === 'current') {
           title.innerHTML = 'YOUR TURN!';
           msg.textContent = 'Get ready… your game will start soon! 🎾';
           msg.classList.add('big');
+          if (readyBtn) { readyBtn.disabled = true; readyBtn.style.opacity = '0.5'; readyBtn.style.pointerEvents = 'none'; }
         } else {
           title.innerHTML = 'GET READY...';
           msg.classList.remove('big');
           msg.textContent = 'Please wait…';
-          // Someone is playing / selected → popup once
+          // Disable PLAY while someone is playing
           try {
             const st = await api('/api/queue/state');
+            const isPlaying = !!st.current;
+            if (readyBtn) { readyBtn.disabled = isPlaying; readyBtn.style.opacity = isPlaying ? '0.5' : '1'; readyBtn.style.pointerEvents = isPlaying ? 'none' : 'auto'; }
             if (st.current && !window._waitingPopupShown) {
               window._waitingPopupShown = true;
               Swal.fire({ icon: 'info', title: 'Please wait', text: `${st.current.username} has been selected — please wait until the game finishes.`, confirmButtonColor: '#0a2a6e' });
