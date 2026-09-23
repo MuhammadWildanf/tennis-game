@@ -187,7 +187,12 @@
           msg.textContent = 'Get ready… your game will start soon! 🎾';
           msg.classList.add('big');
           if (readyBtn) { readyBtn.disabled = true; readyBtn.style.opacity = '0.5'; readyBtn.style.pointerEvents = 'none'; }
+          if (!window._selectedPopupShown) {
+            window._selectedPopupShown = true;
+            Swal.fire({ icon: 'success', title: 'You have been selected!', text: 'Get ready to play! 🎾', confirmButtonColor: '#0a2a6e' });
+          }
         } else {
+          window._selectedPopupShown = false;
           title.innerHTML = 'GET READY...';
           msg.classList.remove('big');
           msg.textContent = 'Please wait…';
