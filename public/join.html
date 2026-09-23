@@ -228,7 +228,10 @@
         } else {
           Swal.fire({ icon: 'info', title: 'Please wait', text: `${r.winner_username} has been selected — please wait until the game finishes.`, confirmButtonColor: '#0a2a6e' });
         }
-      } catch (e) { Swal.fire({ icon: 'error', title: 'Error', text: e.message, confirmButtonColor: '#0a2a6e' }); }
+      } catch (e) {
+        const msg = (e.message && e.message !== 'Request failed') ? e.message : 'A player has been selected — please wait until the game finishes.';
+        Swal.fire({ icon: 'info', title: 'Please wait', text: msg, confirmButtonColor: '#0a2a6e' });
+      }
     }
 
     async function leaveQueue() {
