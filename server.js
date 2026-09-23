@@ -686,6 +686,12 @@ app.get('/api/admin/clicks', (req, res) => {
   res.json(rows);
 });
 
+// Admin reset (temp): clear queue + clicks
+app.post('/api/admin/reset', (req, res) => {
+  db.prepare("DELETE FROM queue").run();
+  try { db.prepare("DELETE FROM play_clicks").run(); } catch(_){}
+  res.json({ success: true });
+});
 // Staff removes someone from the queue (no-show / duplicate / flood).
 app.post('/api/admin/queue/remove', (req, res) => {
   const { username } = req.body || {};

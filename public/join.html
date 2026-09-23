@@ -55,7 +55,7 @@
       <h2>READY TO<br />PLAY?</h2>
       <p class="ev-hint" id="join-who"></p>
       <button class="ev-btn" id="join-btn" onclick="joinQueue()">
-        <span class="btn-label">JOIN WAITING LIST ✓</span>
+        <span class="btn-label">JOIN ✓</span>
         <span class="btn-spinner"></span>
       </button>
       <div class="mini-links"><button onclick="switchAlias()">Use different alias</button></div>
@@ -63,13 +63,13 @@
 
     <!-- State 3: dalam antrian -->
     <section id="join-status" class="ev-card hidden">
-      <h2 id="queue-title">WAITING...</h2>
+      <h2 id="queue-title">GET READY...</h2>
       <div class="ev-pill queue-name" id="queue-name">–</div>
       <p class="queue-msg" id="queue-msg">Please wait…</p>
       <button class="ev-btn" id="ready-btn" onclick="tryReady()" style="margin-top:14px;">
         <span class="btn-label">PLAY</span>
       </button>
-      <div class="mini-links"><button onclick="leaveQueue()">Leave waiting list</button></div>
+      <div class="mini-links"><button onclick="leaveQueue()">Leave</button></div>
     </section>
 
     <!-- State 4: selesai main -->
@@ -160,7 +160,7 @@
         show('#join-status');
         pollTimer = setInterval(refreshStatus, 3000);
         await refreshStatus();
-        toast(`You are in waiting list! 🎾`);
+        toast(`You are in! 🎾`);
       } catch (err) {
         toast(err.message);
       } finally {
@@ -186,9 +186,9 @@
           msg.textContent = 'Get ready… your game will start soon! 🎾';
           msg.classList.add('big');
         } else {
-          title.innerHTML = 'WAITING...';
+          title.innerHTML = 'GET READY...';
           msg.classList.remove('big');
-          msg.textContent = 'Please wait — you are in waiting list…';
+          msg.textContent = 'Please wait…';
           // Someone is playing / selected → popup once
           try {
             const st = await api('/api/queue/state');
