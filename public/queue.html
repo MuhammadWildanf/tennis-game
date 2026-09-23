@@ -116,13 +116,21 @@
           $('#now-name').textContent = '–';
           $('#now-sub').textContent = s.total_waiting ? 'Ready to call ↓' : 'No players yet';
         }
-        $('#q-count').textContent = s.total_waiting;
-        $('#q-list').innerHTML = s.waiting.map((w) =>
-          `<div class="q-row"><span class="n">#${w.position}</span>` +
-          `<span class="who"><b>${esc(w.display_name || w.username)}</b><span>${esc(w.created_at || '')}</span></span>` +
-          `<button class="btn-play-q" onclick="pick('${esc(w.username)}')">▶</button>` +
-          `<button class="btn-x" onclick="removeQ('${esc(w.username)}')">✕</button></div>`
-        ).join('') || '<p class="q-empty">No players yet.</p>';
+        const playersCard = document.querySelector('.q-head').closest('.ev-card');
+        if (s.current) {
+          $('#q-count').textContent = '—';
+          $('#q-list').innerHTML = '<p class="q-empty">Game in progress — rebutan after finish.</p>';
+          if (playersCard) playersCard.style.opacity = '0.5';
+        } else {
+          if (playersCard) playersCard.style.opacity = '1';
+          $('#q-count').textContent = s.total_waiting;
+          $('#q-list').innerHTML = s.waiting.map((w) =>
+            `<div class="q-row"><span class="n">#${w.position}</span>` +
+            `<span class="who"><b>${esc(w.display_name || w.username)}</b><span>${esc(w.created_at || '')}</span></span>` +
+            `<button class="btn-play-q" onclick="pick('${esc(w.username)}')">▶</button>` +
+            `<button class="btn-x" onclick="removeQ('${esc(w.username)}')">✕</button></div>`
+          ).join('') || '<p class="q-empty">No players yet. Tap PLAY on your phone to compete!</p>';
+        }
         $('#last-upd').textContent = 'updated ' + new Date().toLocaleTimeString();
       } catch (e) { Swal.fire({ icon:'error', title:'Error', text:e.message, confirmButtonColor:'#0a2a6e' }); }
     }
