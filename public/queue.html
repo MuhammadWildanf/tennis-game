@@ -119,7 +119,7 @@
         const playersCard = document.querySelector('.q-head').closest('.ev-card');
         if (s.current) {
           $('#q-count').textContent = '—';
-          $('#q-list').innerHTML = '<p class="q-empty">Game in progress — rebutan after finish.</p>';
+          $('#q-list').innerHTML = '<p class="q-empty">Game in progress — please wait until the game finishes.</p>';
           if (playersCard) playersCard.style.opacity = '0.5';
         } else {
           if (playersCard) playersCard.style.opacity = '1';
