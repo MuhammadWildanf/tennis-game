@@ -1,15 +1,22 @@
 /* ─── Tema event Citi Tennis Challenge (mobile-first, dipakai /, /join, /scoreboard) ─── */
 .ev-body {
   font-family: 'Basenji', system-ui, sans-serif;
-  background: #06255e url('assets/image/bg.png') center / cover no-repeat fixed;
+  background: #06255e;
+  display: flex; justify-content: center;
+}
+.ev-body::before {
+  content: ''; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background: url('assets/image/bg.png') center / cover no-repeat fixed;
+  max-width: 430px; left: 50%; transform: translateX(-50%); width: 100%;
 }
 .ev-veil {
   position: fixed; inset: 0; z-index: 0; pointer-events: none;
   background: url('assets/image/overlay-bg.png') center / cover no-repeat;
+  max-width: 430px; left: 50%; transform: translateX(-50%); width: 100%;
 }
 .ev-footwave {
-  position: fixed; right: 0; bottom: 0; z-index: 1; pointer-events: none;
-  width: 100%; height: 150px; overflow: hidden;
+  position: fixed; bottom: 0; z-index: 1; pointer-events: none;
+  width: 100%; max-width: 430px; left: 50%; transform: translateX(-50%); height: 150px; overflow: hidden;
 }
 .ev-footwave img { float: right; height: 100%; width: auto; max-width: none; }
 
@@ -24,13 +31,17 @@
 .ev-app img { max-width: 100%; }
 .ev-footwave img { max-width: none; }
 
-/* Layar ≥ HP: selalu versi mobile, kolom tengah ala phone */
+/* Selalu versi mobile — bahkan di desktop */
+.ev-app {
+  max-width: 430px !important;
+  margin: 0 auto !important;
+  border-left: 1px solid rgba(255,255,255,.14);
+  border-right: 1px solid rgba(255,255,255,.14);
+  box-shadow: 0 0 60px rgba(0, 0, 0, .5);
+}
 @media (min-width: 560px) {
   .ev-app {
     min-height: 100svh;
-    border-left: 1px solid rgba(255,255,255,.14);
-    border-right: 1px solid rgba(255,255,255,.14);
-    box-shadow: 0 0 60px rgba(0, 0, 0, .5);
   }
 }
 

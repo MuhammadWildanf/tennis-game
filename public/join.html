@@ -6,6 +6,7 @@
   <title>Join Queue — Tennis Challenge</title>
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="event.css" />
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <style>
     .queue-msg {
       font-family: 'Astonpoliz', sans-serif;
@@ -54,7 +55,7 @@
       <h2>READY TO<br />PLAY?</h2>
       <p class="ev-hint" id="join-who"></p>
       <button class="ev-btn" id="join-btn" onclick="joinQueue()">
-        <span class="btn-label">JOIN QUEUE ✓</span>
+        <span class="btn-label">JOIN WAITING LIST ✓</span>
         <span class="btn-spinner"></span>
       </button>
       <div class="mini-links"><button onclick="switchAlias()">Use different alias</button></div>
@@ -62,10 +63,13 @@
 
     <!-- State 3: dalam antrian -->
     <section id="join-status" class="ev-card hidden">
-      <h2 id="queue-title">ON QUEUE...</h2>
+      <h2 id="queue-title">WAITING...</h2>
       <div class="ev-pill queue-name" id="queue-name">–</div>
       <p class="queue-msg" id="queue-msg">Please wait…</p>
-      <div class="mini-links"><button onclick="leaveQueue()">Leave queue</button></div>
+      <button class="ev-btn" id="ready-btn" onclick="tryReady()" style="margin-top:14px;">
+        <span class="btn-label">READY</span>
+      </button>
+      <div class="mini-links"><button onclick="leaveQueue()">Leave waiting list</button></div>
     </section>
 
     <!-- State 4: selesai main -->
@@ -103,10 +107,7 @@
       return data;
     }
     function toast(t) {
-      $('#toast-text').textContent = t;
-      $('#toast').classList.remove('hidden');
-      clearTimeout(window._tt);
-      window._tt = setTimeout(() => $('#toast').classList.add('hidden'), 3000);
+      Swal.fire({ icon:'info', title: t, confirmButtonColor:'#0a2a6e', timer: 2500, showConfirmButton:false });
     }
     function loading(btn, on) {
       if (!btn.dataset.label) btn.dataset.label = btn.querySelector('.btn-label').textContent;
@@ -159,7 +160,7 @@
         show('#join-status');
         pollTimer = setInterval(refreshStatus, 3000);
         await refreshStatus();
-        toast(`You are #${data.position} in line! 🎾`);
+        toast(`You are in waiting list! 🎾`);
       } catch (err) {
         toast(err.message);
       } finally {
@@ -185,10 +186,18 @@
           msg.textContent = 'Get ready… usher will start your game! 🎾';
           msg.classList.add('big');
         } else {
-          title.innerHTML = 'ON QUEUE...';
+          title.innerHTML = 'WAITING...';
           msg.classList.remove('big');
-          if (s.ahead === 0) msg.textContent = 'Almost there — you are next! Please wait…';
-          else msg.textContent = `#${s.position} in line — ${s.ahead} ahead of you. Please wait…`;
+          msg.textContent = 'Please wait — you are in waiting list…';
+          // Someone is playing → popup once (not every 3s)
+          try {
+            const st = await api('/api/queue/state');
+            if (st.current && !window._waitingPopupShown) {
+              window._waitingPopupShown = true;
+              Swal.fire({ icon: 'info', title: 'Please wait', text: `Someone is playing as ${st.current.username} — please wait for your turn.`, confirmButtonColor: '#0a2a6e' });
+            }
+            if (!st.current) window._waitingPopupShown = false;
+          } catch (_) {}
         }
       } catch (_) {}
     }
@@ -201,6 +210,17 @@
         $('#queue-name').textContent = me.username;
       } catch (_) {}
       show('#join-idle');
+    }
+
+    async function tryReady() {
+      try {
+        const st = await api('/api/queue/state');
+        if (st.current) {
+          Swal.fire({ icon: 'info', title: 'Please wait', text: `Someone is playing as ${st.current.username} — please wait for your turn.`, confirmButtonColor: '#0a2a6e' });
+          return;
+        }
+        Swal.fire({ icon: 'success', title: 'Ready!', text: 'Please wait for usher to start your game. 🎾', confirmButtonColor: '#0a2a6e' });
+      } catch (e) { Swal.fire({ icon: 'error', title: 'Error', text: e.message, confirmButtonColor: '#0a2a6e' }); }
     }
 
     async function leaveQueue() {

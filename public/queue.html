@@ -6,6 +6,7 @@
   <title>Usher — Pick Player</title>
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="event.css" />
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <style>
     .now-label {
       font-family: 'Astonpoliz', sans-serif; text-align: center;
@@ -68,11 +69,11 @@
       <div class="now-label">NOW PLAYING</div>
       <div class="now-name" id="now-name">–</div>
       <div class="now-sub" id="now-sub">–</div>
-      <button class="ev-btn" onclick="skip()">SKIP ⏭ NEXT IN LINE</button>
+      <button class="ev-btn" onclick="skip()">SKIP ⏭ NEXT IN WAITING LIST</button>
     </section>
 
     <section class="ev-card">
-      <div class="q-head"><h3>QUEUE (<span id="q-count">0</span>)</h3></div>
+      <div class="q-head"><h3>WAITING (<span id="q-count">0</span>)</h3></div>
       <div id="q-list"></div>
       <p class="live-note">TAP ▶ TO PLAY · LIVE · <span id="last-upd"></span></p>
     </section>
@@ -100,11 +101,8 @@
       }
       return data;
     }
-    function toast(t) {
-      $('#toast-text').textContent = t;
-      $('#toast').classList.remove('hidden');
-      clearTimeout(window._tt);
-      window._tt = setTimeout(() => $('#toast').classList.add('hidden'), 3000);
+    function toast(t, icon='info') {
+      Swal.fire({ icon, title: t, confirmButtonColor: '#0a2a6e', timer: 2500, showConfirmButton: false });
     }
 
     async function refresh() {
@@ -123,9 +121,9 @@
           `<span class="who"><b>${esc(w.display_name || w.username)}</b><span>${esc(w.created_at || '')}</span></span>` +
           `<button class="btn-play-q" onclick="pick('${esc(w.username)}')">▶</button>` +
           `<button class="btn-x" onclick="removeQ('${esc(w.username)}')">✕</button></div>`
-        ).join('') || '<p class="q-empty">Queue empty.</p>';
+        ).join('') || '<p class="q-empty">Waiting list empty.</p>';
         $('#last-upd').textContent = 'updated ' + new Date().toLocaleTimeString();
-      } catch (e) { toast(e.message); }
+      } catch (e) { Swal.fire({ icon:'error', title:'Error', text:e.message, confirmButtonColor:'#0a2a6e' }); }
     }
 
     async function pick(username, force) {
@@ -134,10 +132,11 @@
         toast(`${r.current.user.username} is playing! 🎾`);
       } catch (e) {
         if (e.data && e.data.need_force) {
-          if (confirm(`${e.message}\n\nForce switch player?`)) return pick(username, true);
+          const r = await Swal.fire({ icon:'warning', title:'Force switch?', text:e.message, showCancelButton:true, confirmButtonColor:'#0a2a6e', confirmButtonText:'Force switch' });
+          if (r.isConfirmed) return pick(username, true);
           return;
         }
-        toast(e.message);
+        Swal.fire({ icon:'error', title:'Error', text:e.message, confirmButtonColor:'#0a2a6e' });
       }
       refresh();
     }
@@ -146,15 +145,16 @@
       try {
         const r = await api('/api/queue/next', { method: 'POST' });
         toast(r.current ? `${r.current.user.username} is playing!` : 'Queue empty');
-      } catch (e) { toast(e.message); }
+      } catch (e) { Swal.fire({ icon:'error', title:'Error', text:e.message, confirmButtonColor:'#0a2a6e' }); }
       refresh();
     }
 
     async function removeQ(username) {
-      if (!confirm(`Remove ${username} from queue?`)) return;
+      const c = await Swal.fire({ icon:'warning', title:`Remove ${username}?`, text:'Remove from waiting list?', showCancelButton:true, confirmButtonColor:'#e1251b' });
+      if (!c.isConfirmed) return;
       try {
         await api('/api/admin/queue/remove', { method: 'POST', body: JSON.stringify({ username }) });
-      } catch (e) { toast(e.message); }
+      } catch (e) { Swal.fire({ icon:'error', title:'Error', text:e.message, confirmButtonColor:'#0a2a6e' }); }
       refresh();
     }
 
