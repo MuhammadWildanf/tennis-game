@@ -161,7 +161,7 @@
     async function endGame() {
       const c = await Swal.fire({ icon:'warning', title:'End current game?', text:'Mark current as done (temp)', showCancelButton:true, confirmButtonColor:'#e1251b' });
       if (!c.isConfirmed) return;
-      try { await api('/api/queue/next', { method:'POST' }); } catch(e){ Swal.fire({ icon:'error', title:'Error', text:e.message, confirmButtonColor:'#0a2a6e' }); }
+      try { await api('/api/admin/end-game', { method:'POST' }); } catch(e){ Swal.fire({ icon:'error', title:'Error', text:e.message, confirmButtonColor:'#0a2a6e' }); }
       refresh();
     }
     async function resetAll() {

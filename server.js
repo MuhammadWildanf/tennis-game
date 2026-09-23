@@ -690,6 +690,12 @@ app.get('/api/admin/clicks', (req, res) => {
 app.post('/api/admin/reset', (req, res) => {
   db.prepare("DELETE FROM queue").run();
   try { db.prepare("DELETE FROM play_clicks").run(); } catch(_){}
+  currentRound += 1;
+  res.json({ success: true });
+});
+app.post('/api/admin/end-game', (req, res) => {
+  db.prepare("UPDATE queue SET status='done', updated_at=datetime('now') WHERE status='current'").run();
+  currentRound += 1;
   res.json({ success: true });
 });
 // Staff removes someone from the queue (no-show / duplicate / flood).
