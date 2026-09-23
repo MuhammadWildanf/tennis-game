@@ -183,7 +183,7 @@
         $('#queue-name').textContent = (localStorage.getItem('ct_user') || '').toUpperCase() || '–';
         if (s.status === 'current') {
           title.innerHTML = 'YOUR TURN!';
-          msg.textContent = 'Get ready… usher will start your game! 🎾';
+          msg.textContent = 'Get ready… your game will start soon! 🎾';
           msg.classList.add('big');
         } else {
           title.innerHTML = 'WAITING...';
@@ -219,7 +219,7 @@
           Swal.fire({ icon: 'info', title: 'Please wait', text: `Someone is playing as ${st.current.username} — please wait for your turn.`, confirmButtonColor: '#0a2a6e' });
           return;
         }
-        Swal.fire({ icon: 'success', title: 'Ready!', text: 'Please wait for usher to start your game. 🎾', confirmButtonColor: '#0a2a6e' });
+        Swal.fire({ icon: 'success', title: 'Ready!', text: 'Please wait — your game will start soon. 🎾', confirmButtonColor: '#0a2a6e' });
       } catch (e) { Swal.fire({ icon: 'error', title: 'Error', text: e.message, confirmButtonColor: '#0a2a6e' }); }
     }
 
