@@ -189,12 +189,12 @@
           title.innerHTML = 'WAITING...';
           msg.classList.remove('big');
           msg.textContent = 'Please wait — you are in waiting list…';
-          // Someone is playing / sudah terpilih → popup once
+          // Someone is playing / selected → popup once
           try {
             const st = await api('/api/queue/state');
             if (st.current && !window._waitingPopupShown) {
               window._waitingPopupShown = true;
-              Swal.fire({ icon: 'info', title: 'Sudah ada yang terpilih', text: `${st.current.username} terpilih — tunggu permainan selesai terlebih dahulu.`, confirmButtonColor: '#0a2a6e' });
+              Swal.fire({ icon: 'info', title: 'Please wait', text: `${st.current.username} has been selected — please wait until the game finishes.`, confirmButtonColor: '#0a2a6e' });
             }
             if (!st.current) window._waitingPopupShown = false;
           } catch (_) {}
@@ -216,13 +216,13 @@
       try {
         const r = await api('/api/queue/compete', { method:'POST' });
         if (r.reason === 'playing') {
-          Swal.fire({ icon: 'info', title: 'Please wait', text: `Sudah ada yang terpilih — tunggu permainan selesai terlebih dahulu.`, confirmButtonColor: '#0a2a6e' });
+          Swal.fire({ icon: 'info', title: 'Please wait', text: `A player has been selected — please wait until the game finishes.`, confirmButtonColor: '#0a2a6e' });
           return;
         }
         if (r.winner) {
-          Swal.fire({ icon: 'success', title: 'You are selected!', text: 'Kamu terpilih — tunggu game dimulai. 🎾', confirmButtonColor: '#0a2a6e' });
+          Swal.fire({ icon: 'success', title: 'You have been selected!', text: 'Get ready to play! 🎾', confirmButtonColor: '#0a2a6e' });
         } else {
-          Swal.fire({ icon: 'info', title: 'Sudah ada yang terpilih', text: `${r.winner_username} terpilih — tunggu permainan selesai terlebih dahulu.`, confirmButtonColor: '#0a2a6e' });
+          Swal.fire({ icon: 'info', title: 'Please wait', text: `${r.winner_username} has been selected — please wait until the game finishes.`, confirmButtonColor: '#0a2a6e' });
         }
       } catch (e) { Swal.fire({ icon: 'error', title: 'Error', text: e.message, confirmButtonColor: '#0a2a6e' }); }
     }
