@@ -485,7 +485,7 @@ app.post('/api/queue/leave', authMiddleware, (req, res) => {
   res.json({ success: true });
 });
 
-// Unity (public, like leaderboard): who's playing + who's waiting (show only 1 fastest when idle)
+// Unity (public, like leaderboard): who's playing + who's waiting (rebutan: idle tampil 0 sampai PLAY diklik)
 app.get('/api/queue/state', (req, res) => {
   const current = db.prepare(`
     SELECT u.username, u.display_name, u.best_score, q.created_at,
@@ -500,11 +500,11 @@ app.get('/api/queue/state', (req, res) => {
     WHERE q.status = 'waiting'
     ORDER BY q.id ASC
   `).all().map((p, i) => ({ position: (current ? 1 : 0) + i + 1, ...p }));
-  // Rebutan mode: when idle, show only 1 fastest (smallest click_ms in current round)
-  if (!current && waiting.length > 1) {
+  if (!current) {
     const r = currentRound;
     const winner = db.prepare('SELECT username FROM play_clicks WHERE round=? ORDER BY click_ms ASC, id ASC LIMIT 1').get(r);
     if (winner) waiting = waiting.filter(w => w.username === winner.username).slice(0,1);
+    else waiting = [];
   }
   res.json({ current, waiting, total_waiting: waiting.length });
 });
