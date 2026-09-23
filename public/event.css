@@ -24,13 +24,10 @@
 .ev-app img { max-width: 100%; }
 .ev-footwave img { max-width: none; }
 
-/* Layar ≥ HP: selalu versi mobile, kolom tengah ala phone */
+/* Desktop: tanpa kolom tengah berbayang */
 @media (min-width: 560px) {
   .ev-app {
     min-height: 100svh;
-    border-left: 1px solid rgba(255,255,255,.14);
-    border-right: 1px solid rgba(255,255,255,.14);
-    box-shadow: 0 0 60px rgba(0, 0, 0, .5);
   }
 }
 
