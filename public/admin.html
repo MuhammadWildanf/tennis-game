@@ -4,166 +4,96 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Admin Dashboard — Tennis Challenge</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <style>
-    .app { max-width: 860px; }
-    .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-bottom: 18px; }
-    .stat { background: rgba(255,255,255,.06); border: 1px solid var(--card-border); border-radius: 12px; padding: 12px; text-align: center; }
-    .stat b { display: block; font-size: 24px; font-weight: 800; color: var(--gold); }
-    .stat span { font-size: 11px; font-weight: 700; letter-spacing: .08em; color: var(--text-dim); }
-    .admin-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 8px; }
-    .admin-table th, .admin-table td { padding: 8px 10px; border-bottom: 1px solid rgba(255,255,255,.08); text-align: left; }
-    .admin-table th { font-size: 11px; letter-spacing: .08em; color: var(--text-dim); }
-    .pill { display: inline-block; font-size: 11px; font-weight: 800; border-radius: 999px; padding: 2px 10px; }
-    .pill.pending { background: rgba(245,184,30,.18); color: var(--gold); }
-    .pill.confirmed { background: rgba(61,220,132,.18); color: var(--green); }
-    .pill.win { background: rgba(61,220,132,.18); color: var(--green); }
-    .pill.loss { background: rgba(255,123,123,.18); color: var(--danger); }
-    h3 { font-size: 15px; font-weight: 800; margin: 18px 0 4px; letter-spacing: .02em; }
-    .refresh-note { text-align: center; font-size: 11px; color: var(--text-dim); margin-top: 14px; }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Inter',system-ui,sans-serif;background:#0e1628;color:#e8edf5;min-height:100vh;display:flex}
+    .sidebar{width:240px;background:#0a1224;border-right:1px solid rgba(255,255,255,.08);display:flex;flex-direction:column;position:fixed;inset:0 auto 0 0;z-index:10}
+    .side-head{padding:20px 18px;border-bottom:1px solid rgba(255,255,255,.08)}
+    .side-head h1{font-size:15px;font-weight:800;letter-spacing:.06em;color:#7cc4ff}
+    .side-head p{font-size:11px;letter-spacing:.14em;color:rgba(255,255,255,.45);margin-top:2px}
+    .side-nav{flex:1;padding:12px 8px;overflow:auto}
+    .side-nav button{width:100%;text-align:left;background:none;border:none;color:rgba(255,255,255,.65);padding:10px 12px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;display:flex;gap:10px;align-items:center}
+    .side-nav button.active,.side-nav button:hover{background:rgba(124,196,255,.12);color:#fff}
+    .side-foot{padding:12px 16px;border-top:1px solid rgba(255,255,255,.08);font-size:11px;color:rgba(255,255,255,.4)}
+    .main{margin-left:240px;flex:1;min-width:0;padding:24px;max-width:1100px}
+    .topbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+    .btn{border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06);color:#fff;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer}
+    .btn.danger{background:#e1251b;border-color:#e1251b}
+    .btn:hover{filter:brightness(1.1)}
+    .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:18px}
+    .stat{background:#131e38;border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:16px;text-align:center}
+    .stat b{display:block;font-size:26px;font-weight:800;color:#f5c542}
+    .stat span{font-size:11px;letter-spacing:.1em;color:rgba(255,255,255,.5);font-weight:700}
+    .card{background:#131e38;border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:16px;margin-bottom:16px}
+    .card h3{font-size:13px;letter-spacing:.08em;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
+    .live{font-size:11px;color:#7cc4ff}
+    .admin-table{width:100%;border-collapse:collapse;font-size:13px}
+    .admin-table th{font-size:11px;letter-spacing:.06em;color:rgba(255,255,255,.5);text-align:left;padding:8px;border-bottom:1px solid rgba(255,255,255,.08)}
+    .admin-table td{padding:8px;border-bottom:1px solid rgba(255,255,255,.06)}
+    .pill{display:inline-block;font-size:11px;font-weight:800;border-radius:999px;padding:3px 8px}
+    .pill.pending{background:rgba(245,184,30,.15);color:#f5c542}
+    .pill.confirmed{background:rgba(61,220,132,.15);color:#3ddc84}
+    .pill.win{background:rgba(61,220,132,.15);color:#3ddc84}
+    .pill.loss{background:rgba(255,80,80,.15);color:#ff7b7b}
+    .btn-sm{padding:4px 8px;font-size:11px;border-radius:6px}
+    .qr-box{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+    .qr-box img{width:120px;height:120px;background:#fff;padding:6px;border-radius:10px}
+    @media(max-width:700px){.sidebar{width:64px}.sidebar span.label{display:none}.main{margin-left:64px;padding:16px}.side-head h1{font-size:11px}}
   </style>
 </head>
 <body>
-  <main class="app">
-    <header class="brand">
-      <h1 class="brand-title">Tennis Challenge<br /><span>Admin Dashboard</span></h1>
-      <p class="partners-caption">STAFF ONLY</p>
-    </header>
-
-    <section class="lb-card">
-      <p id="admin-error" class="form-error"></p>
-
-      <div id="admin-body" class="hidden">
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
-          <button class="btn-outline-light" onclick="endGameAdmin()" style="background:#e1251b;color:#fff;border-color:#e1251b">END GAME</button>
-          <button class="btn-outline-light" onclick="resetQueue()">Reset Queue</button>
-          <button class="btn-outline-light" onclick="resetAllData()">Reset All Data</button>
-          <button class="btn-outline-light" onclick="backupData()">Backup JSON</button>
-          <button class="btn-outline-light" onclick="exportExcel()">Export Excel (CSV)</button>
-        </div>
-        <div class="stat-grid" id="stat-grid"></div>
-
-        <h3>⏳ Queue (turn-taking)</h3>
-        <div style="display:flex;gap:16px;align-items:center;margin:8px 0 4px;flex-wrap:wrap">
-          <img src="/qr/join.png" alt="Join QR — print me" style="width:132px;height:132px;background:#fff;padding:6px;border-radius:10px" />
-          <p class="link-sub" style="flex:1;min-width:200px;text-align:left">
-            Print this QR &amp; place it <b>outside the game</b> (poster/banner). Anyone scans → joins queue.<br />
-            Open this dashboard via the <b>LAN IP</b> so the QR encodes the LAN address, then right-click → print.<br />
-            Join URL: <b id="join-url"></b>
-          </p>
-        </div>
-        <div id="queue-list"></div>
-
-        <h3>📜 Recent matches</h3>
-        <div id="matches-list"></div>
-
-        <h3>🏆 Leaderboard</h3>
-        <div id="lb-list-admin"></div>
-
-        <p class="refresh-note">Auto-refresh every 5s · <span id="last-upd"></span></p>
+  <aside class="sidebar">
+    <div class="side-head"><h1>TENNIS CHALLENGE</h1><p>ADMIN PANEL</p></div>
+    <nav class="side-nav">
+      <button class="active" data-tab="dash" onclick="switchTab('dash')">📊 <span class="label">Dashboard</span></button>
+      <button data-tab="queue" onclick="switchTab('queue')">👥 <span class="label">Players</span></button>
+      <button data-tab="matches" onclick="switchTab('matches')">📜 <span class="label">Matches</span></button>
+      <button data-tab="lb" onclick="switchTab('lb')">🏆 <span class="label">Leaderboard</span></button>
+    </nav>
+    <div class="side-foot">CITI WEALTH SYMPOSIUM<br><span id="side-time"></span></div>
+  </aside>
+  <main class="main">
+    <div class="topbar">
+      <button class="btn danger" onclick="endGameAdmin()">END GAME</button>
+      <button class="btn" onclick="resetQueue()">Reset Queue</button>
+      <button class="btn" onclick="resetAllData()">Reset All</button>
+      <button class="btn" onclick="backupData()">Backup JSON</button>
+      <button class="btn" onclick="exportExcel()">Export Excel</button>
+      <span style="margin-left:auto;font-size:11px;color:rgba(255,255,255,.4)" id="join-url"></span>
+    </div>
+    <p id="admin-error" style="color:#ff7b7b;font-size:13px;margin-bottom:8px"></p>
+    <div id="tab-dash">
+      <div class="stat-grid" id="stat-grid"></div>
+      <div class="card">
+        <h3>QR Join <span class="live">LIVE</span></h3>
+        <div class="qr-box"><img src="/qr/join.png" alt="QR"><div><p style="font-size:13px;color:rgba(255,255,255,.7)">Print & place outside game. Join URL:</p><b id="join-url2" style="font-size:13px"></b></div></div>
       </div>
-    </section>
+    </div>
+    <div id="tab-queue" style="display:none"><div class="card"><h3>Players <span class="live" id="q-live"></span></h3><div id="queue-list"></div></div></div>
+    <div id="tab-matches" style="display:none"><div class="card"><h3>Recent Matches</h3><div id="matches-list"></div></div></div>
+    <div id="tab-lb" style="display:none"><div class="card"><h3>Leaderboard Top 10</h3><div id="lb-list-admin"></div></div></div>
+    <p style="text-align:center;font-size:11px;color:rgba(255,255,255,.3);margin-top:12px" id="last-upd"></p>
   </main>
-
-  <div id="toast" class="toast hidden"><span id="toast-text"></span></div>
-
-  <script>
-    'use strict';
-    const $ = (s) => document.querySelector(s);
-
-    async function api(path, options = {}) {
-      const res = await fetch(path, {
-        method: options.method || 'GET',
-        headers: { 'Content-Type': 'application/json' },
-        body: options.body
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || 'Request failed');
-      return data;
-    }
-    const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-
-    async function loadAll() {
-      const errEl = $('#admin-error');
-      errEl.classList.remove('show');
-      try {
-        const [stats, matches, lb, queue] = await Promise.all([
-          api('/api/admin/stats'),
-          api('/api/admin/matches'),
-          fetch('/api/leaderboard?sort=best_score&limit=10').then((r) => r.json()),
-          api('/api/admin/queue')
-        ]);
-        $('#admin-body').classList.remove('hidden');
-        renderStats(stats);
-        renderQueue(queue);
-        renderMatches(matches);
-        renderLb(lb);
-        $('#last-upd').textContent = 'updated ' + new Date().toLocaleTimeString();
-      } catch (e) {
-        errEl.textContent = e.message;
-        errEl.classList.add('show');
-      }
-    }
-
-    function renderStats(s) {
-      const cards = [
-        [s.users_total, 'USERS'], [s.users_played, 'PLAYED'],
-        [s.matches_total, 'MATCHES'], [s.wins, 'WINS']
-      ];
-      $('#stat-grid').innerHTML = cards.map(([v, l]) => `<div class="stat"><b>${v}</b><span>${l}</span></div>`).join('');
-    }
-    function renderQueue(rows) {
-      $('#join-url').textContent = location.origin + '/join';
-      $('#queue-list').innerHTML = rows.length ? `<table class="admin-table"><tr><th>#</th><th>PLAYER</th><th>STATUS</th><th>SINCE</th><th></th></tr>` +
-        rows.map((q, i) => `<tr><td>${i + 1}</td><td><b>${esc(q.username)}</b>${q.ready_at ? ' ✓' : ''}</td><td><span class="pill ${q.status === 'current' ? 'confirmed' : 'pending'}">${esc(q.status)}${q.ready_at ? ' · ready' : ''}</span></td><td>${esc(q.created_at)}</td><td><button class="btn-outline-light btn-small" style="flex:none;padding:4px 10px" onclick="removeFromQueue('${esc(q.username)}')">✕</button></td></tr>`).join('') + `</table>`
-        : '<p class="link-sub">Queue empty — Unity idle.</p>';
-    }
-    async function removeFromQueue(username) {
-      const r = await Swal.fire({ icon:'warning', title:`Remove ${username}?`, showCancelButton:true, confirmButtonColor:'#e1251b' });
-      if (!r.isConfirmed) return;
-      try { await api('/api/admin/queue/remove', { method: 'POST', body: JSON.stringify({ username }) }); loadAll(); }
-      catch (e) { Swal.fire({ icon:'error', title:'Error', text:e.message }); }
-    }
-    async function endGameAdmin() {
-      const r = await Swal.fire({ icon:'warning', title:'End current game?', showCancelButton:true, confirmButtonColor:'#e1251b' });
-      if (!r.isConfirmed) return;
-      try { const d = await api('/api/admin/end-game', { method:'POST' }); Swal.fire({ icon:'success', title: d.ended ? `Ended ${d.ended}` : 'No game to end' }); loadAll(); }
-      catch(e){ Swal.fire({ icon:'error', title:'Error', text:e.message }); }
-    }
-    async function resetQueue() {
-      const r = await Swal.fire({ icon:'warning', title:'Reset queue?', text:'Clear waiting list & clicks', showCancelButton:true, confirmButtonColor:'#e1251b' });
-      if (!r.isConfirmed) return;
-      try { await api('/api/admin/reset', { method:'POST' }); Swal.fire({ icon:'success', title:'Queue reset' }); loadAll(); }
-      catch(e){ Swal.fire({ icon:'error', title:'Error', text:e.message }); }
-    }
-    async function resetAllData() {
-      const r = await Swal.fire({ icon:'warning', title:'Reset ALL data?', text:'Queue + leaderboard + history will be cleared!', showCancelButton:true, confirmButtonColor:'#e1251b' });
-      if (!r.isConfirmed) return;
-      try { await api('/api/admin/reset-all', { method:'POST' }); Swal.fire({ icon:'success', title:'All data reset' }); loadAll(); }
-      catch(e){ Swal.fire({ icon:'error', title:'Error', text:e.message }); }
-    }
-    async function backupData() {
-      try { const d = await api('/api/admin/backup'); const blob = new Blob([JSON.stringify(d,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='backup-'+Date.now()+'.json'; a.click(); }
-      catch(e){ Swal.fire({ icon:'error', title:'Error', text:e.message }); }
-    }
-    function exportExcel() { window.location.href='/api/admin/export'; }
-    function renderMatches(rows) {
-      $('#matches-list').innerHTML = rows.length ? `<table class="admin-table"><tr><th>PLAYER</th><th>SCORE</th><th>RESULT</th><th>WHEN</th></tr>` +
-        rows.map((m) => `<tr><td><b>${esc(m.username)}</b></td><td style="color:var(--gold);font-weight:800">${esc(m.score)}</td><td><span class="pill ${esc(m.result)}">${esc(m.result)}</span></td><td>${esc(m.played_at)}</td></tr>`).join('') + `</table>`
-        : '<p class="link-sub">No matches yet — play one!</p>';
-    }
-    function renderLb(rows) {
-      $('#lb-list-admin').innerHTML = rows.length ? `<table class="admin-table"><tr><th>#</th><th>PLAYER</th><th>BEST</th><th>W/L</th></tr>` +
-        rows.map((p) => `<tr><td>${p.rank}</td><td><b>${esc(p.display_name || p.username)}</b></td><td style="color:var(--gold);font-weight:800">${p.best_score}</td><td>${p.wins}/${p.losses}</td></tr>`).join('') + `</table>`
-        : '<p class="link-sub">Leaderboard empty.</p>';
-    }
-
-    loadAll();
-    setInterval(() => { if (!$('#admin-body').classList.contains('hidden')) loadAll(); }, 5000);
-  </script>
+<script>
+'use strict';
+const $=s=>document.querySelector(s);
+async function api(path,options={}){const res=await fetch(path,{method:options.method||'GET',headers:{'Content-Type':'application/json'},body:options.body});const data=await res.json().catch(()=>({}));if(!res.ok)throw new Error(data.error||'Request failed');return data;}
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function switchTab(t){document.querySelectorAll('.side-nav button').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));['dash','queue','matches','lb'].forEach(x=>{const el=document.getElementById('tab-'+x);if(el)el.style.display=x===t?'block':(t==='dash'&&x==='dash'?'block':'none')});if(t!=='dash')document.getElementById('tab-dash').style.display='none';}
+async function loadAll(){const errEl=$('#admin-error');errEl.textContent='';try{const [stats,matches,lb,queue]=await Promise.all([api('/api/admin/stats'),api('/api/admin/matches'),fetch('/api/leaderboard?sort=best_score&limit=10').then(r=>r.json()),api('/api/admin/queue')]);renderStats(stats);renderQueue(queue);renderMatches(matches);renderLb(lb);$('#last-upd').textContent='updated '+new Date().toLocaleTimeString();$('#side-time').textContent=new Date().toLocaleTimeString();}catch(e){errEl.textContent=e.message}}
+function renderStats(s){const cards=[[s.users_total,'USERS'],[s.users_played,'PLAYED'],[s.matches_total,'MATCHES'],[s.wins,'WINS']];$('#stat-grid').innerHTML=cards.map(([v,l])=>`<div class="stat"><b>${v}</b><span>${l}</span></div>`).join('');}
+function renderQueue(rows){$('#join-url').textContent=location.origin+'/join';const j2=$('#join-url2');if(j2)j2.textContent=location.origin+'/join';$('#q-live').textContent=rows.length?rows.length+' players':'';$('#queue-list').innerHTML=rows.length?`<table class="admin-table"><tr><th>#</th><th>PLAYER</th><th>STATUS</th><th>SINCE</th><th></th></tr>`+rows.map((q,i)=>`<tr><td>${i+1}</td><td><b>${esc(q.username)}</b>${q.ready_at?' ✓':''}</td><td><span class="pill ${q.status==='current'?'confirmed':'pending'}">${esc(q.status)}</span></td><td>${esc(q.created_at)}</td><td><button class="btn btn-sm" onclick="removeFromQueue('${esc(q.username)}')">✕</button></td></tr>`).join('')+'</table>':'<p style="color:rgba(255,255,255,.5);font-size:13px">No players — Unity idle.</p>';}
+async function removeFromQueue(username){const r=await Swal.fire({icon:'warning',title:`Remove ${username}?`,showCancelButton:true,confirmButtonColor:'#e1251b'});if(!r.isConfirmed)return;try{await api('/api/admin/queue/remove',{method:'POST',body:JSON.stringify({username})});loadAll();}catch(e){Swal.fire({icon:'error',title:'Error',text:e.message});}}
+async function endGameAdmin(){const r=await Swal.fire({icon:'warning',title:'End current game?',showCancelButton:true,confirmButtonColor:'#e1251b'});if(!r.isConfirmed)return;try{const d=await api('/api/admin/end-game',{method:'POST'});Swal.fire({icon:'success',title:d.ended?`Ended ${d.ended}`:'No game to end'});loadAll();}catch(e){Swal.fire({icon:'error',title:'Error',text:e.message});}}
+async function resetQueue(){const r=await Swal.fire({icon:'warning',title:'Reset queue?',text:'Clear waiting list & clicks',showCancelButton:true,confirmButtonColor:'#e1251b'});if(!r.isConfirmed)return;try{await api('/api/admin/reset',{method:'POST'});Swal.fire({icon:'success',title:'Queue reset'});loadAll();}catch(e){Swal.fire({icon:'error',title:'Error',text:e.message});}}
+async function resetAllData(){const r=await Swal.fire({icon:'warning',title:'Reset ALL data?',text:'Queue + leaderboard + history will be cleared!',showCancelButton:true,confirmButtonColor:'#e1251b'});if(!r.isConfirmed)return;try{await api('/api/admin/reset-all',{method:'POST'});Swal.fire({icon:'success',title:'All data reset'});loadAll();}catch(e){Swal.fire({icon:'error',title:'Error',text:e.message});}}
+async function backupData(){try{const d=await api('/api/admin/backup');const blob=new Blob([JSON.stringify(d,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='backup-'+Date.now()+'.json';a.click();}catch(e){Swal.fire({icon:'error',title:'Error',text:e.message});}}
+function exportExcel(){window.location.href='/api/admin/export';}
+function renderMatches(rows){$('#matches-list').innerHTML=rows.length?`<table class="admin-table"><tr><th>PLAYER</th><th>SCORE</th><th>RESULT</th><th>WHEN</th></tr>`+rows.map(m=>`<tr><td><b>${esc(m.username)}</b></td><td style="color:#f5c542;font-weight:800">${esc(m.score)}</td><td><span class="pill ${esc(m.result)}">${esc(m.result)}</span></td><td>${esc(m.played_at)}</td></tr>`).join('')+'</table>':'<p style="color:rgba(255,255,255,.5);font-size:13px">No matches yet.</p>';}
+function renderLb(rows){$('#lb-list-admin').innerHTML=rows.length?`<table class="admin-table"><tr><th>#</th><th>PLAYER</th><th>BEST</th><th>W/L</th></tr>`+rows.map(p=>`<tr><td>${p.rank}</td><td><b>${esc(p.display_name||p.username)}</b></td><td style="color:#f5c542;font-weight:800">${p.best_score}</td><td>${p.wins}/${p.losses}</td></tr>`).join('')+'</table>':'<p style="color:rgba(255,255,255,.5);font-size:13px">Leaderboard empty.</p>';}
+loadAll();setInterval(()=>loadAll(),5000);
+</script>
 </body>
 </html>
