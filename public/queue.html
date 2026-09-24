@@ -70,7 +70,6 @@
       <div class="now-name" id="now-name">–</div>
       <div class="now-sub" id="now-sub">–</div>
       <button class="ev-btn" onclick="skip()">SKIP ⏭ NEXT</button>
-      <button class="ev-btn" onclick="endGame()" style="background:#e1251b; color:#fff; border-color:#fff; margin-top:10px;">END GAME (TEMP)</button>
     </section>
 
     <section class="ev-card">
@@ -164,18 +163,6 @@
       try {
         await api('/api/admin/queue/remove', { method: 'POST', body: JSON.stringify({ username }) });
       } catch (e) { Swal.fire({ icon:'error', title:'Error', text:e.message, confirmButtonColor:'#0a2a6e' }); }
-      refresh();
-    }
-    async function endGame() {
-      const c = await Swal.fire({ icon:'warning', title:'End current game?', text:'Mark current as done (temp)', showCancelButton:true, confirmButtonColor:'#e1251b' });
-      if (!c.isConfirmed) return;
-      try { await api('/api/admin/end-game', { method:'POST' }); } catch(e){ Swal.fire({ icon:'error', title:'Error', text:e.message, confirmButtonColor:'#0a2a6e' }); }
-      refresh();
-    }
-    async function resetAll() {
-      const c = await Swal.fire({ icon:'warning', title:'Reset all?', text:'Clear players & clicks', showCancelButton:true, confirmButtonColor:'#e1251b' });
-      if (!c.isConfirmed) return;
-      try { await api('/api/admin/reset', { method:'POST' }); toast('Reset done'); } catch(e){ Swal.fire({ icon:'error', title:'Error', text:e.message, confirmButtonColor:'#0a2a6e' }); }
       refresh();
     }
 

@@ -679,17 +679,50 @@ app.get('/api/admin/clicks', (req, res) => {
   res.json(rows);
 });
 
-// Admin reset (temp): clear queue + clicks
+// Admin reset single queue
 app.post('/api/admin/reset', (req, res) => {
   db.prepare("DELETE FROM queue").run();
   try { db.prepare("DELETE FROM play_clicks").run(); } catch(_){}
   currentRound += 1;
   res.json({ success: true });
 });
-app.post('/api/admin/end-game', (req, res) => {
-  db.prepare("UPDATE queue SET status='done', updated_at=datetime('now') WHERE status='current'").run();
-  currentRound += 1;
+// Admin reset all data (queue + history + leaderboard)
+app.post('/api/admin/reset-all', (req, res) => {
+  db.prepare("DELETE FROM queue").run();
+  try { db.prepare("DELETE FROM play_clicks").run(); } catch(_){}
+  db.prepare("DELETE FROM match_history").run();
+  db.prepare("DELETE FROM active_sessions WHERE purpose='turn'").run();
+  db.prepare("UPDATE users SET total_matches=0, wins=0, losses=0, total_score=0, best_score=0, last_played=NULL").run();
+  currentRound = 1;
   res.json({ success: true });
+});
+app.post('/api/admin/end-game', (req, res) => {
+  const cur = db.prepare("SELECT user_id, username FROM queue q JOIN users u ON u.id=q.user_id WHERE q.status='current'").get();
+  db.prepare("UPDATE queue SET status='done', updated_at=datetime('now') WHERE status='current'").run();
+  if (cur) try { db.prepare("DELETE FROM active_sessions WHERE user_id=? AND purpose='turn'").run(cur.user_id); } catch(_){}
+  currentRound += 1;
+  res.json({ success: true, ended: cur ? cur.username : null });
+});
+app.get('/api/admin/backup', (req, res) => {
+  const users = db.prepare('SELECT * FROM users').all();
+  const queue = db.prepare('SELECT q.*, u.username FROM queue q JOIN users u ON u.id=q.user_id').all();
+  const history = db.prepare('SELECT * FROM match_history ORDER BY played_at DESC LIMIT 500').all();
+  let clicks = [];
+  try { clicks = db.prepare('SELECT * FROM play_clicks ORDER BY round, click_ms').all(); } catch(_){}
+  res.json({ server_time: new Date().toISOString(), users, queue, history, clicks });
+});
+app.get('/api/admin/export', (req, res) => {
+  const rows = db.prepare(`
+    SELECT u.username, u.display_name, u.total_matches, u.wins, u.losses, u.best_score, u.total_score,
+           (CASE WHEN u.total_matches>0 THEN ROUND(u.wins*100.0/u.total_matches,1) ELSE 0 END) as win_rate,
+           u.last_played
+    FROM users ORDER BY u.best_score DESC
+  `).all();
+  const header = 'rank,username,display_name,total_matches,wins,losses,best_score,total_score,win_rate,last_played';
+  const csv = [header, ...rows.map((r,i)=> `${i+1},${r.username},${r.display_name},${r.total_matches},${r.wins},${r.losses},${r.best_score},${r.total_score},${r.win_rate},${r.last_played||''}`)].join('\n');
+  res.set('Content-Type','text/csv');
+  res.set('Content-Disposition','attachment; filename="leaderboard.csv"');
+  res.send(csv);
 });
 // Staff removes someone from the queue (no-show / duplicate / flood).
 app.post('/api/admin/queue/remove', (req, res) => {
