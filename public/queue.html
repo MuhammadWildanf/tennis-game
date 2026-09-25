@@ -1,57 +1,145 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Usher — Pick Player</title>
+  <title>Tennis Challenge — Citi Wealth Symposium</title>
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="event.css" />
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <style>
     .now-label {
-      font-family: 'Astonpoliz', sans-serif; text-align: center;
-      font-size: 13px; letter-spacing: .3em; text-indent: .3em;
-      color: rgba(255,255,255,.85);
+      font-family: 'Astonpoliz', sans-serif;
+      text-align: center;
+      font-size: 13px;
+      letter-spacing: .3em;
+      text-indent: .3em;
+      color: rgba(255, 255, 255, .85);
     }
+
     .now-name {
-      text-align: center; color: #fff; font-weight: 600;
-      font-size: 44px; letter-spacing: .02em; margin: 6px 0 2px;
+      text-align: center;
+      color: #fff;
+      font-weight: 600;
+      font-size: 44px;
+      letter-spacing: .02em;
+      margin: 6px 0 2px;
       word-break: break-word;
     }
+
     .now-sub {
-      font-family: 'Astonpoliz', sans-serif; text-align: center;
-      color: rgba(255,255,255,.9); font-size: 15px; letter-spacing: .06em;
+      font-family: 'Astonpoliz', sans-serif;
+      text-align: center;
+      color: rgba(255, 255, 255, .9);
+      font-size: 15px;
+      letter-spacing: .06em;
     }
+
     .q-head {
-      display: flex; align-items: baseline; justify-content: space-between;
-      color: #fff; margin-bottom: 10px;
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      color: #fff;
+      margin-bottom: 10px;
     }
-    .q-head h3 { font-size: 20px; letter-spacing: .04em; }
-    .q-head h3 span { color: #7cc4ff; }
+
+    .q-head h3 {
+      font-size: 20px;
+      letter-spacing: .04em;
+    }
+
+    .q-head h3 span {
+      color: #7cc4ff;
+    }
+
     .q-row {
-      display: flex; align-items: center; gap: 10px;
-      background: #fff; border-radius: 999px;
-      padding: 8px 8px 8px 18px; margin-top: 8px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #fff;
+      border-radius: 999px;
+      padding: 8px 8px 8px 18px;
+      margin-top: 8px;
     }
-    .q-row .n { color: #e1251b; font-size: 19px; min-width: 44px; }
-    .q-row .who { flex: 1; min-width: 0; color: #101010; }
-    .q-row .who b { font-size: 18px; letter-spacing: .02em; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .q-row .who span { display: block; font-size: 11px; color: rgba(0,0,0,.5); font-family: 'Astonpoliz', sans-serif; letter-spacing: .06em; }
+
+    .q-row .n {
+      color: #e1251b;
+      font-size: 19px;
+      min-width: 44px;
+    }
+
+    .q-row .who {
+      flex: 1;
+      min-width: 0;
+      color: #101010;
+    }
+
+    .q-row .who b {
+      font-size: 18px;
+      letter-spacing: .02em;
+      display: block;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .q-row .who span {
+      display: block;
+      font-size: 11px;
+      color: rgba(0, 0, 0, .5);
+      font-family: 'Astonpoliz', sans-serif;
+      letter-spacing: .06em;
+    }
+
     .btn-play-q {
-      background: #0a2a6e; color: #fff; border: none; border-radius: 50%;
-      width: 46px; height: 46px; font-size: 18px; cursor: pointer; flex: none;
+      background: #0a2a6e;
+      color: #fff;
+      border: none;
+      border-radius: 50%;
+      width: 46px;
+      height: 46px;
+      font-size: 18px;
+      cursor: pointer;
+      flex: none;
       font-family: inherit;
     }
-    .btn-play-q:active { transform: scale(.93); }
-    .btn-x {
-      background: transparent; border: 2px solid rgba(225,37,27,.6); color: #e1251b;
-      border-radius: 50%; width: 40px; height: 40px; cursor: pointer; flex: none;
-      font-family: inherit; font-size: 15px;
+
+    .btn-play-q:active {
+      transform: scale(.93);
     }
-    .q-empty { text-align: center; color: #fff; font-size: 15px; padding: 12px 0; }
-    .live-note { text-align: center; font-size: 11px; color: rgba(255,255,255,.6); margin-top: 12px; font-family: 'Astonpoliz', sans-serif; letter-spacing: .08em; }
+
+    .btn-x {
+      background: transparent;
+      border: 2px solid rgba(225, 37, 27, .6);
+      color: #e1251b;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      cursor: pointer;
+      flex: none;
+      font-family: inherit;
+      font-size: 15px;
+    }
+
+    .q-empty {
+      text-align: center;
+      color: #fff;
+      font-size: 15px;
+      padding: 12px 0;
+    }
+
+    .live-note {
+      text-align: center;
+      font-size: 11px;
+      color: rgba(255, 255, 255, .6);
+      margin-top: 12px;
+      font-family: 'Astonpoliz', sans-serif;
+      letter-spacing: .08em;
+    }
   </style>
 </head>
+
 <body class="ev-body">
   <div class="ev-veil" aria-hidden="true"></div>
   <div class="ev-footwave" aria-hidden="true"><img src="assets/image/footer-wave.png" alt="" /></div>
@@ -65,18 +153,20 @@
     </header>
 
     <div class="ev-cols">
-    <section class="ev-card">
-      <div class="now-label">NOW PLAYING</div>
-      <div class="now-name" id="now-name">–</div>
-      <div class="now-sub" id="now-sub">–</div>
-      <button class="ev-btn" onclick="skip()">SKIP ⏭ NEXT</button>
-    </section>
+      <section class="ev-card">
+        <div class="now-label">NOW PLAYING</div>
+        <div class="now-name" id="now-name">–</div>
+        <div class="now-sub" id="now-sub">–</div>
+        <button class="ev-btn" onclick="skip()">SKIP ⏭ NEXT</button>
+      </section>
 
-    <section class="ev-card">
-      <div class="q-head"><h3>PLAYERS (<span id="q-count">0</span>)</h3></div>
-      <div id="q-list"></div>
-      <p class="live-note">TAP ▶ TO PLAY · LIVE · <span id="last-upd"></span></p>
-    </section>
+      <section class="ev-card">
+        <div class="q-head">
+          <h3>PLAYERS (<span id="q-count">0</span>)</h3>
+        </div>
+        <div id="q-list"></div>
+        <p class="live-note">TAP ▶ TO PLAY · LIVE · <span id="last-upd"></span></p>
+      </section>
     </div>
   </main>
 
@@ -85,7 +175,7 @@
   <script>
     'use strict';
     const $ = (s) => document.querySelector(s);
-    const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
     async function api(path, options = {}) {
       const res = await fetch(path, {
@@ -101,7 +191,7 @@
       }
       return data;
     }
-    function toast(t, icon='info') {
+    function toast(t, icon = 'info') {
       Swal.fire({ icon, title: t, confirmButtonColor: '#0a2a6e', timer: 2500, showConfirmButton: false });
     }
 
@@ -131,7 +221,7 @@
           ).join('') || '<p class="q-empty">No players yet. Tap PLAY on your phone to compete!</p>';
         }
         $('#last-upd').textContent = 'updated ' + new Date().toLocaleTimeString();
-      } catch (e) { Swal.fire({ icon:'error', title:'Error', text:e.message, confirmButtonColor:'#0a2a6e' }); }
+      } catch (e) { Swal.fire({ icon: 'error', title: 'Error', text: e.message, confirmButtonColor: '#0a2a6e' }); }
     }
 
     async function pick(username, force) {
@@ -140,11 +230,11 @@
         toast(`${r.current.user.username} is playing! 🎾`);
       } catch (e) {
         if (e.data && e.data.need_force) {
-          const r = await Swal.fire({ icon:'warning', title:'Force switch?', text:e.message, showCancelButton:true, confirmButtonColor:'#0a2a6e', confirmButtonText:'Force switch' });
+          const r = await Swal.fire({ icon: 'warning', title: 'Force switch?', text: e.message, showCancelButton: true, confirmButtonColor: '#0a2a6e', confirmButtonText: 'Force switch' });
           if (r.isConfirmed) return pick(username, true);
           return;
         }
-        Swal.fire({ icon:'error', title:'Error', text:e.message, confirmButtonColor:'#0a2a6e' });
+        Swal.fire({ icon: 'error', title: 'Error', text: e.message, confirmButtonColor: '#0a2a6e' });
       }
       refresh();
     }
@@ -153,16 +243,16 @@
       try {
         const r = await api('/api/queue/next', { method: 'POST' });
         toast(r.current ? `${r.current.user.username} is playing!` : 'No players');
-      } catch (e) { Swal.fire({ icon:'error', title:'Error', text:e.message, confirmButtonColor:'#0a2a6e' }); }
+      } catch (e) { Swal.fire({ icon: 'error', title: 'Error', text: e.message, confirmButtonColor: '#0a2a6e' }); }
       refresh();
     }
 
     async function removeQ(username) {
-      const c = await Swal.fire({ icon:'warning', title:`Remove ${username}?`, text:'Remove player?', showCancelButton:true, confirmButtonColor:'#e1251b' });
+      const c = await Swal.fire({ icon: 'warning', title: `Remove ${username}?`, text: 'Remove player?', showCancelButton: true, confirmButtonColor: '#e1251b' });
       if (!c.isConfirmed) return;
       try {
         await api('/api/admin/queue/remove', { method: 'POST', body: JSON.stringify({ username }) });
-      } catch (e) { Swal.fire({ icon:'error', title:'Error', text:e.message, confirmButtonColor:'#0a2a6e' }); }
+      } catch (e) { Swal.fire({ icon: 'error', title: 'Error', text: e.message, confirmButtonColor: '#0a2a6e' }); }
       refresh();
     }
 
@@ -170,4 +260,5 @@
     setInterval(refresh, 3000);
   </script>
 </body>
+
 </html>

@@ -686,13 +686,13 @@ app.post('/api/admin/reset', (req, res) => {
   currentRound += 1;
   res.json({ success: true });
 });
-// Admin reset all data (queue + history + leaderboard)
+// Admin reset all data (queue + history + leaderboard + users)
 app.post('/api/admin/reset-all', (req, res) => {
   db.prepare("DELETE FROM queue").run();
   try { db.prepare("DELETE FROM play_clicks").run(); } catch(_){}
   db.prepare("DELETE FROM match_history").run();
-  db.prepare("DELETE FROM active_sessions WHERE purpose='turn'").run();
-  db.prepare("UPDATE users SET total_matches=0, wins=0, losses=0, total_score=0, best_score=0, last_played=NULL").run();
+  db.prepare("DELETE FROM active_sessions").run();
+  db.prepare("DELETE FROM users").run();
   currentRound = 1;
   res.json({ success: true });
 });

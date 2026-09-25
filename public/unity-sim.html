@@ -1,33 +1,125 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Unity Simulator — Tennis Challenge</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+    rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
   <style>
-    .app { max-width: 900px; }
-    .sim-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
-    @media (max-width: 640px) { .sim-grid { grid-template-columns: 1fr; } }
-    .qr-box { text-align: center; }
-    .qr-box img { width: 100%; max-width: 220px; background: #fff; padding: 10px; border-radius: 14px; }
-    .btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
-    .btn-row button { flex: 1; min-width: 140px; border: none; border-radius: 10px; padding: 12px; font-family: inherit; font-weight: 800; cursor: pointer; }
-    .btn-go { background: linear-gradient(180deg,#6db4ef,#4a9fe8); color: #fff; }
-    .btn-warn { background: rgba(245,184,30,.18); color: var(--gold); border: 1px solid rgba(245,184,30,.5) !important; }
-    .btn-auto { background: rgba(61,220,132,.15); color: var(--green); border: 1px solid rgba(61,220,132,.5) !important; }
-    .btn-auto.on { background: var(--green); color: #0a1a3f; }
-    #sim-log { background: #050b22; border: 1px solid var(--card-border); border-radius: 10px; padding: 10px 12px; font-family: monospace; font-size: 12px; height: 260px; overflow-y: auto; margin-top: 8px; white-space: pre-wrap; }
-    #sim-log .ok { color: var(--green); }
-    #sim-log .err { color: var(--danger); }
-    #sim-log .inf { color: var(--sky); }
-    .kv { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; font-size: 13px; margin-top: 8px; text-align: left; }
-    .kv b { color: var(--gold); word-break: break-all; }
+    .app {
+      max-width: 900px;
+    }
+
+    .sim-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+
+    @media (max-width: 640px) {
+      .sim-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .qr-box {
+      text-align: center;
+    }
+
+    .qr-box img {
+      width: 100%;
+      max-width: 220px;
+      background: #fff;
+      padding: 10px;
+      border-radius: 14px;
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+
+    .btn-row button {
+      flex: 1;
+      min-width: 140px;
+      border: none;
+      border-radius: 10px;
+      padding: 12px;
+      font-family: inherit;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .btn-go {
+      background: linear-gradient(180deg, #6db4ef, #4a9fe8);
+      color: #fff;
+    }
+
+    .btn-warn {
+      background: rgba(245, 184, 30, .18);
+      color: var(--gold);
+      border: 1px solid rgba(245, 184, 30, .5) !important;
+    }
+
+    .btn-auto {
+      background: rgba(61, 220, 132, .15);
+      color: var(--green);
+      border: 1px solid rgba(61, 220, 132, .5) !important;
+    }
+
+    .btn-auto.on {
+      background: var(--green);
+      color: #0a1a3f;
+    }
+
+    #sim-log {
+      background: #050b22;
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-family: monospace;
+      font-size: 12px;
+      height: 260px;
+      overflow-y: auto;
+      margin-top: 8px;
+      white-space: pre-wrap;
+    }
+
+    #sim-log .ok {
+      color: var(--green);
+    }
+
+    #sim-log .err {
+      color: var(--danger);
+    }
+
+    #sim-log .inf {
+      color: var(--sky);
+    }
+
+    .kv {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 4px 12px;
+      font-size: 13px;
+      margin-top: 8px;
+      text-align: left;
+    }
+
+    .kv b {
+      color: var(--gold);
+      word-break: break-all;
+    }
   </style>
 </head>
+
 <body>
   <main class="app">
     <header class="brand">
@@ -39,7 +131,8 @@
       <div class="sim-grid">
         <div class="qr-box">
           <img src="/qr/join.png" alt="Join QR" />
-          <p class="link-sub">QR ini = yang tampil di layar game.<br />Scan pakai HP untuk join. Usher pick dari <a href="/queue">/queue</a>.</p>
+          <p class="link-sub">QR ini = yang tampil di layar game.<br />Scan pakai HP untuk join. Usher pick dari <a
+              href="/queue">/queue</a>.</p>
           <div class="kv">
             <span>Current</span><b id="sim-current">–</b>
             <span>Waiting</span><b id="sim-waiting">0</b>
@@ -56,7 +149,8 @@
           <div class="btn-row">
             <button class="btn-auto" id="auto-btn" onclick="toggleAuto()">Auto-play: OFF</button>
           </div>
-          <p class="link-sub" style="margin-top:10px">Polling state tiap 2 detik → current baru? claim-turn → langsung "main". Auto-play = tiap ada giliran, tunggu 5 detik lalu finish skor acak (simulasi game berjalan).</p>
+          <p class="link-sub" style="margin-top:10px">Polling state tiap 2 detik → current baru? claim-turn → langsung
+            "main". Auto-play = tiap ada giliran, tunggu 5 detik lalu finish skor acak (simulasi game berjalan).</p>
         </div>
       </div>
     </section>
@@ -169,4 +263,5 @@
     })();
   </script>
 </body>
+
 </html>
