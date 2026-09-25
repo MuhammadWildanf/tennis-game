@@ -655,14 +655,24 @@ app.post('/api/queue/compete', authMiddleware, (req, res) => {
     const pos = queuePosition(req.user.id);
     return res.json({ success: false, reason: 'playing', position: pos.position || null, message: 'Someone is playing — please wait' });
   }
-  // No one playing: record click, pick fastest for display (not auto current — wait usher pick)
+  // No one playing: record click, fastest wins and AUTO-STARTS (promote to
+  // current + issue turn token so Unity claim-turn langsung dapat giliran).
+  // Usher pick tetap bisa (force) sebagai override.
   const ex = db.prepare('SELECT * FROM queue WHERE user_id=?').get(req.user.id);
   if (!ex) db.prepare("INSERT INTO queue (user_id, status) VALUES (?, 'waiting')").run(req.user.id);
   else if (ex.status !== 'waiting' && ex.status !== 'current') db.prepare("UPDATE queue SET status='waiting', ready_at=NULL WHERE user_id=?").run(req.user.id);
   const winner = db.prepare('SELECT user_id, username FROM play_clicks WHERE round=? ORDER BY click_ms ASC, id ASC LIMIT 1').get(round);
   const isWinner = winner && winner.user_id === req.user.id;
   if (isWinner) {
-    return res.json({ success: true, winner: true, username: req.user.username, round });
+    // Promote winner -> current (idempotent: kalau sudah current, pakai token lama)
+    const cur = db.prepare("SELECT turn_token FROM queue WHERE user_id=? AND status='current'").get(req.user.id);
+    if (!cur) {
+      db.prepare("UPDATE queue SET status='current', ready_at=datetime('now'), updated_at=datetime('now') WHERE user_id=?").run(req.user.id);
+      const token = generateToken();
+      db.prepare("INSERT INTO active_sessions (token, user_id, purpose) VALUES (?, ?, 'turn')").run(token, req.user.id);
+      db.prepare('UPDATE queue SET turn_token=? WHERE user_id=?').run(token, req.user.id);
+    }
+    return res.json({ success: true, winner: true, username: req.user.username, round, auto_started: true });
   } else {
     const wname = winner ? winner.username : null;
     const pos = queuePosition(req.user.id);
