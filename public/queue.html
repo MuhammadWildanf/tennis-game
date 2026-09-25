@@ -241,8 +241,9 @@
 
     async function skip() {
       try {
-        const r = await api('/api/queue/next', { method: 'POST' });
-        toast(r.current ? `${r.current.user.username} is playing!` : 'No players');
+        // SKIP = akhiri game berjalan, kembali idle. Penentu berikut via PLAY di HP.
+        const r = await api('/api/admin/end-game', { method: 'POST' });
+        toast(r.ended ? `${r.ended} skipped — tap PLAY for next!` : 'No game running');
       } catch (e) { Swal.fire({ icon: 'error', title: 'Error', text: e.message, confirmButtonColor: '#0a2a6e' }); }
       refresh();
     }

@@ -39,7 +39,7 @@
     <section id="alias-wrap" class="ev-card hidden">
       <h2>ENTER<br />YOUR ALIAS</h2>
       <form id="join-alias-form" novalidate>
-        <input type="text" class="ev-pill" id="join-alias-input" placeholder="JAMES" maxlength="12"
+        <input type="text" class="ev-pill" id="join-alias-input" placeholder="Nickname" maxlength="12"
                autocomplete="off" autocapitalize="characters" spellcheck="false" />
         <p class="ev-hint">use 2 – 12 characters ( A-Z , 0-9 )</p>
         <p id="join-alias-error" class="form-error"></p>
@@ -186,21 +186,30 @@
           title.innerHTML = 'YOUR TURN!';
           msg.textContent = 'Get ready… your game will start soon! 🎾';
           msg.classList.add('big');
-          if (readyBtn) { readyBtn.disabled = true; readyBtn.style.opacity = '0.5'; readyBtn.style.pointerEvents = 'none'; }
+          if (readyBtn) readyBtn.style.display = 'none';
           if (!window._selectedPopupShown) {
             window._selectedPopupShown = true;
             Swal.fire({ icon: 'success', title: 'You have been selected!', text: 'Get ready to play! 🎾', confirmButtonColor: '#0a2a6e' });
           }
         } else {
           window._selectedPopupShown = false;
-          title.innerHTML = 'GET READY...';
-          msg.classList.remove('big');
-          msg.textContent = 'Please wait…';
-          // Disable PLAY while someone is playing
+          // Saat ada yang main: sembunyikan tombol PLAY biar tidak bingung,
+          // tampilkan siapa yang sedang main. Saat idle: tampilkan PLAY.
           try {
             const st = await api('/api/queue/state');
             const isPlaying = !!st.current;
-            if (readyBtn) { readyBtn.disabled = isPlaying; readyBtn.style.opacity = isPlaying ? '0.5' : '1'; readyBtn.style.pointerEvents = isPlaying ? 'none' : 'auto'; }
+            if (isPlaying) {
+              const who = st.current.display_name || st.current.username;
+              title.innerHTML = 'GAME IN PROGRESS';
+              msg.classList.remove('big');
+              msg.textContent = `${who} is playing… please wait.`;
+              if (readyBtn) readyBtn.style.display = 'none';
+            } else {
+              title.innerHTML = 'GET READY...';
+              msg.classList.remove('big');
+              msg.textContent = 'Tap PLAY when ready…';
+              if (readyBtn) { readyBtn.style.display = ''; readyBtn.disabled = false; readyBtn.style.opacity = '1'; readyBtn.style.pointerEvents = 'auto'; }
+            }
             if (st.current && !window._waitingPopupShown) {
               window._waitingPopupShown = true;
               Swal.fire({ icon: 'info', title: 'Please wait', text: `${st.current.username} has been selected — please wait until the game finishes.`, confirmButtonColor: '#0a2a6e' });
