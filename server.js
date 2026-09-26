@@ -142,7 +142,7 @@ app.post('/api/signup', (req, res) => {
 
     const existing = db.prepare('SELECT id FROM users WHERE username = ?').get(username);
     if (existing) {
-      return res.status(409).json({ error: 'This alias is already taken' });
+      return res.status(409).json({ error: 'Nickname already taken, please enter a new nickname' });
     }
 
     const id = uuidv4();

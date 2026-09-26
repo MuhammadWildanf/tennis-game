@@ -44,18 +44,18 @@
         <p class="ev-hint">use 2 – 12 characters ( A-Z , 0-9 )</p>
         <p id="join-alias-error" class="form-error"></p>
         <button type="submit" class="ev-btn" id="join-ready-btn">
-          <span class="btn-label">LET'S PLAY !</span>
+          <span class="btn-label">CONTINUE</span>
           <span class="btn-spinner"></span>
         </button>
       </form>
     </section>
 
-    <!-- State 2: sudah daftar, belum masuk antrian -->
+    <!-- State 2: welcome + READY -->
     <section id="join-idle" class="ev-card hidden">
-      <h2>READY TO<br />PLAY?</h2>
-      <p class="ev-hint" id="join-who"></p>
-      <button class="ev-btn" id="join-btn" onclick="joinQueue()">
-        <span class="btn-label">JOIN ✓</span>
+      <h2 id="join-welcome">Welcome!</h2>
+      <p class="ev-hint">Press READY to play!</p>
+      <button class="ev-btn" id="join-btn" onclick="readyToPlay()">
+        <span class="btn-label">READY</span>
         <span class="btn-spinner"></span>
       </button>
       <div class="mini-links"><button onclick="switchAlias()">Use different alias</button></div>
@@ -66,17 +66,14 @@
       <h2 id="queue-title">GET READY...</h2>
       <div class="ev-pill queue-name" id="queue-name">–</div>
       <p class="queue-msg" id="queue-msg">Please wait…</p>
-      <button class="ev-btn" id="ready-btn" onclick="tryReady()" style="margin-top:14px;">
-        <span class="btn-label">PLAY</span>
-      </button>
-      <div class="mini-links"><button onclick="leaveQueue()">Leave</button></div>
+      <div class="mini-links"><button onclick="leaveQueue()">Leave line</button></div>
     </section>
 
     <!-- State 4: selesai main -->
     <section id="join-done" class="ev-card hidden">
       <h2>THANKS FOR<br />PLAYING!</h2>
       <p class="ev-hint">Your score is on the leaderboard.</p>
-      <button class="ev-btn" id="again-btn" onclick="joinQueue()">
+      <button class="ev-btn" id="again-btn" onclick="showIdle()">
         <span class="btn-label">PLAY AGAIN ✓</span>
         <span class="btn-spinner"></span>
       </button>
@@ -118,6 +115,7 @@
     function hideAll() {
       for (const id of ['#alias-wrap', '#join-idle', '#join-status', '#join-done']) $(id).classList.add('hidden');
       clearInterval(pollTimer);
+      pollTimer = null;
     }
     function show(id) {
       hideAll();
@@ -143,29 +141,46 @@
         authToken = data.token;
         localStorage.setItem('ct_token', authToken);
         localStorage.setItem('ct_user', data.user.username);
-        await joinQueue();
+        await showIdle();
       } catch (err) {
-        errEl.textContent = err.message;
-        errEl.classList.add('show');
+        if (/taken/i.test(err.message || '')) {
+          await Swal.fire({ icon: 'error', title: 'Nickname already taken', text: 'Please enter a new nickname', confirmButtonText: 'CLOSE', confirmButtonColor: '#0a2a6e' });
+          aliasInput.focus();
+        } else {
+          errEl.textContent = err.message;
+          errEl.classList.add('show');
+        }
       } finally {
         loading(btn, false);
       }
     });
 
-    async function joinQueue() {
-      const btns = [$('#join-btn'), $('#again-btn')].filter(Boolean);
-      btns.forEach((b) => loading(b, true));
+    // Flowchart: READY -> cek status game dulu. Sibuk = pesan try-later
+    // (tidak masuk antrian). Idle = join + catat siap + pesan ke area game.
+    async function readyToPlay() {
+      const btn = $('#join-btn');
+      loading(btn, true);
       try {
-        const data = await api('/api/queue/join', { method: 'POST' });
+        const st = await api('/api/queue/state');
+        if (st.current) {
+          await Swal.fire({ icon: 'info', title: 'Another player is playing', text: 'Please try again later!', confirmButtonText: 'CLOSE', confirmButtonColor: '#0a2a6e' });
+          return;
+        }
+        await api('/api/queue/join', { method: 'POST' });
+        const r = await api('/api/queue/compete', { method: 'POST' });
+        if (r.reason === 'playing') {
+          try { await api('/api/queue/leave', { method: 'POST' }); } catch (_) {}
+          await Swal.fire({ icon: 'info', title: 'Another player is playing', text: 'Please try again later!', confirmButtonText: 'CLOSE', confirmButtonColor: '#0a2a6e' });
+          return;
+        }
+        await Swal.fire({ icon: 'success', title: 'Please head to the game area', confirmButtonText: 'OK', confirmButtonColor: '#0a2a6e' });
         show('#join-status');
-        pollTimer = setInterval(refreshStatus, 3000);
+        pollTimer = pollTimer || setInterval(refreshStatus, 3000);
         await refreshStatus();
-        toast(`You are in! 🎾`);
       } catch (err) {
         toast(err.message);
       } finally {
-        loading($('#join-btn'), false);
-        loading($('#again-btn'), false);
+        loading(btn, false);
       }
     }
 
@@ -173,6 +188,7 @@
       try {
         const s = await api('/api/queue/my-status');
         if (!s.in_queue) {
+          window._lastStatus = s.finished ? 'done' : 'idle';
           if (s.finished) show('#join-done'); else showIdle();
           return;
         }
@@ -181,16 +197,19 @@
         const title = $('#queue-title');
         const msg = $('#queue-msg');
         $('#queue-name').textContent = (localStorage.getItem('ct_user') || '').toUpperCase() || '–';
-        const readyBtn = $('#ready-btn');
         if (s.status === 'current') {
           title.innerHTML = 'YOUR TURN!';
-          msg.textContent = 'Get ready… your game will start soon! 🎾';
+          msg.textContent = 'Your game is starting — head to the court! 🎾';
           msg.classList.add('big');
-          if (readyBtn) readyBtn.style.display = 'none';
-          if (!window._selectedPopupShown) {
+          // Popup hanya saat transisi (tadi waiting, sekarang giliranmu) —
+          // buka/refresh halaman langsung diam, cukup tampilkan YOUR TURN.
+          if (window._lastStatus === 'waiting' && !window._selectedPopupShown) {
             window._selectedPopupShown = true;
             Swal.fire({ icon: 'success', title: 'You have been selected!', text: 'Get ready to play! 🎾', confirmButtonColor: '#0a2a6e' });
+          } else {
+            window._selectedPopupShown = true;
           }
+          window._lastStatus = s.status;
         } else {
           window._selectedPopupShown = false;
           // Saat ada yang main: sembunyikan tombol PLAY biar tidak bingung,
@@ -203,18 +222,18 @@
               title.innerHTML = 'GAME IN PROGRESS';
               msg.classList.remove('big');
               msg.textContent = `${who} is playing… please wait.`;
-              if (readyBtn) readyBtn.style.display = 'none';
             } else {
-              title.innerHTML = 'GET READY...';
+              title.innerHTML = `YOU'RE READY!`;
               msg.classList.remove('big');
-              msg.textContent = 'Tap PLAY when ready…';
-              if (readyBtn) { readyBtn.style.display = ''; readyBtn.disabled = false; readyBtn.style.opacity = '1'; readyBtn.style.pointerEvents = 'auto'; }
+              msg.textContent = 'Please head to the game area and wait to be called.';
             }
-            if (st.current && !window._waitingPopupShown) {
+            if (st.current && window._lastSawPlaying === false && !window._waitingPopupShown) {
               window._waitingPopupShown = true;
-              Swal.fire({ icon: 'info', title: 'Please wait', text: `${st.current.username} has been selected — please wait until the game finishes.`, confirmButtonColor: '#0a2a6e' });
+              Swal.fire({ icon: 'info', title: 'Please wait', text: `${st.current.username} is playing now — please wait until the game finishes.`, confirmButtonColor: '#0a2a6e' });
             }
             if (!st.current) window._waitingPopupShown = false;
+            window._lastSawPlaying = isPlaying;
+            window._lastStatus = s.status;
           } catch (_) {}
         }
       } catch (_) {}
@@ -224,28 +243,10 @@
       try {
         const me = await api('/api/profile');
         localStorage.setItem('ct_user', me.username);
-        $('#join-who').textContent = `Playing as ${me.username} — tap below to line up.`;
+        $('#join-welcome').innerHTML = `Welcome<br />${String(me.username).toUpperCase()}!`;
         $('#queue-name').textContent = me.username;
       } catch (_) {}
       show('#join-idle');
-    }
-
-    async function tryReady() {
-      try {
-        const r = await api('/api/queue/compete', { method:'POST' });
-        if (r.reason === 'playing') {
-          Swal.fire({ icon: 'info', title: 'Please wait', text: `A player has been selected — please wait until the game finishes.`, confirmButtonColor: '#0a2a6e' });
-          return;
-        }
-        if (r.winner) {
-          Swal.fire({ icon: 'success', title: 'You have been selected!', text: 'Get ready to play! 🎾', confirmButtonColor: '#0a2a6e' });
-        } else {
-          Swal.fire({ icon: 'info', title: 'Please wait', text: `${r.winner_username} has been selected — please wait until the game finishes.`, confirmButtonColor: '#0a2a6e' });
-        }
-      } catch (e) {
-        const msg = (e.message && e.message !== 'Request failed') ? e.message : 'A player has been selected — please wait until the game finishes.';
-        Swal.fire({ icon: 'info', title: 'Please wait', text: msg, confirmButtonColor: '#0a2a6e' });
-      }
     }
 
     async function leaveQueue() {

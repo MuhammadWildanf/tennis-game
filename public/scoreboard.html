@@ -21,9 +21,9 @@
       background: #fff; border: 3px solid transparent; border-radius: 999px;
       padding: 9px 18px 9px 0; color: #101010;
     }
-    .sb-row.top3 { border-color: #e1251b; }
+    .sb-row.top1 { border-color: #e1251b; background: linear-gradient(180deg, #fff8e1, #fff); }
     .sb-row .rank { color: #e1251b; font-size: 19px; text-align: center; }
-    .sb-row:not(.top3) .rank { color: #8a6d00; }
+    .sb-row:not(.top1) .rank { color: #8a6d00; }
     .sb-row .name {
       font-family: 'Basenji', sans-serif; font-size: 17px; letter-spacing: .02em;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
@@ -35,6 +35,14 @@
     .sb-row.you { box-shadow: 0 0 0 3px #7cc4ff; }
     .sb-empty { text-align: center; color: #fff; font-size: 15px; padding: 14px 0; }
     .sb-note { text-align: center; font-size: 11px; color: rgba(255,255,255,.6); margin-top: 12px; font-family: 'Astonpoliz', sans-serif; letter-spacing: .08em; }
+    /* List sampai 20: rapat + ramping di layar kecil */
+    @media (max-width: 360px) {
+      .sb-head { grid-template-columns: 44px 1fr auto; padding: 0 12px; }
+      .sb-row { grid-template-columns: 44px 1fr auto; padding: 7px 12px 7px 0; }
+      .sb-row .rank { font-size: 16px; }
+      .sb-row .name, .sb-row .score { font-size: 15px; }
+      .sb-title h2 { font-size: 25px; }
+    }
   </style>
 </head>
 <body class="ev-body">
@@ -60,7 +68,7 @@
       <div class="sb-head"><span>POS</span><span>NAME</span><span>SCORE</span></div>
       <div id="sb-empty" class="sb-empty hidden"><p>No scores yet — be the first on the board!</p></div>
       <ul id="sb-list" class="sb-list"></ul>
-      <p class="sb-note">LIVE · <span id="sb-upd"></span></p>
+      <p class="sb-note">TOP 20 · LIVE · <span id="sb-upd"></span></p>
     </section>
 
     <nav class="ev-links">
@@ -77,11 +85,21 @@
 
     async function tick() {
       try {
-        const lb = await (await fetch('/api/leaderboard?sort=best_score&limit=10')).json();
-        $('#sb-empty').classList.toggle('hidden', lb.length > 0);
-        $('#sb-list').innerHTML = lb.map((p) =>
-          `<li class="sb-row${p.rank <= 3 ? ' top3' : ''}${me && p.username === me ? ' you' : ''}">` +
-          `<span class="rank"># ${p.rank}</span>` +
+        const lb = await (await fetch('/api/leaderboard?sort=best_score&limit=20')).json();
+        let rows = lb;
+        // Di luar top 20: nama sendiri tetap tampil di bawah tanpa ranking
+        if (me && !lb.some((p) => p.username === me)) {
+          try {
+            const token = localStorage.getItem('ct_token');
+            const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
+            const pr = await (await fetch('/api/profile', { headers })).json();
+            if (pr && pr.username) rows = [...lb, { rank: null, username: pr.username, display_name: pr.display_name, best_score: pr.best_score || 0 }];
+          } catch (_) {}
+        }
+        $('#sb-empty').classList.toggle('hidden', rows.length > 0);
+        $('#sb-list').innerHTML = rows.map((p) =>
+          `<li class="sb-row${p.rank === 1 ? ' top1' : ''}${me && p.username === me ? ' you' : ''}">` +
+          `<span class="rank"># ${p.rank ?? '–'}</span>` +
           `<span class="name">${esc(p.display_name || p.username)}</span>` +
           `<span class="score">${p.best_score}</span></li>`
         ).join('');

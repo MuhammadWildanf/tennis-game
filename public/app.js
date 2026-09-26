@@ -85,8 +85,13 @@ $('#alias-form').addEventListener('submit', async (e) => {
     localStorage.setItem('ct_user', data.user.username);
     location.href = '/join';
   } catch (err) {
-    errEl.textContent = err.message;
-    errEl.classList.add('show');
+    if (/taken/i.test(err.message || '')) {
+      await Swal.fire({ icon: 'error', title: 'Nickname already taken', text: 'Please enter a new nickname', confirmButtonText: 'CLOSE', confirmButtonColor: '#0a2a6e' });
+      aliasInput.focus();
+    } else {
+      errEl.textContent = err.message;
+      errEl.classList.add('show');
+    }
   } finally {
     setLoading(btn, false);
   }
@@ -116,11 +121,11 @@ function showToast(text) {
   toastTimer = setTimeout(() => toast.classList.add('hidden'), 3000);
 }
 
-// ─── Boot: sudah daftar → langsung ke halaman queue ───
+// ─── Boot: sudah ada data tersimpan → langsung ke leaderboard ───
 (function init() {
   if (!authToken) return;
   api('/api/profile')
-    .then(() => location.replace('/join'))
+    .then(() => location.replace('/scoreboard'))
     .catch(() => {
       localStorage.removeItem('ct_token');
       authToken = null;

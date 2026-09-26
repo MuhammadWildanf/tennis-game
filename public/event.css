@@ -13,7 +13,7 @@
 }
 .ev-footwave img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: right bottom; max-width: none; }
 
-.ev-app { position: relative; z-index: 2; max-width: 430px; margin: 0 auto; padding: 30px 20px 190px; overflow-x: clip; min-height: 100svh; display: flex; flex-direction: column; }
+.ev-app { position: relative; z-index: 2; max-width: 430px; margin: 0 auto; padding: 30px 20px 190px; overflow-x: clip; min-height: 100svh; display: flex; flex-direction: column; row-gap: clamp(18px, 3.5vh, 34px); }
 /* header selalu di atas, card aktif di tengah (seperti layar HP) */
 .ev-app > header { flex: none; }
 .ev-app > section.ev-card { margin-top: auto; margin-bottom: auto; }
@@ -55,7 +55,16 @@
   margin: 2px 0 14px;
 }
 .ev-tagline i { font-style: normal; color: #7cc4ff; padding: 0 .35em; }
-.ev-logo { display: block; width: 190px; height: auto; margin: 0 auto; }
+.ev-logo { display: block; width: 190px; max-width: 55vw; height: auto; margin: 0 auto 2px; }
+
+/* Layar pendek: kecilkan header + card agar tidak nempel */
+@media (max-height: 720px) {
+  .ev-app { padding-top: 20px; row-gap: 16px; }
+  .ev-logo { width: 150px; }
+  .ev-tagline { margin-bottom: 0; }
+  .ev-card { padding: 26px 20px 24px; border-radius: 26px; }
+  .ev-card h2 { font-size: 28px; margin-bottom: 14px; }
+}
 
 /* card */
 .ev-card {

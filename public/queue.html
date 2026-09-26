@@ -157,7 +157,7 @@
         <div class="now-label">NOW PLAYING</div>
         <div class="now-name" id="now-name">–</div>
         <div class="now-sub" id="now-sub">–</div>
-        <button class="ev-btn" onclick="skip()">SKIP ⏭ NEXT</button>
+        <button class="ev-btn" onclick="skip()">SKIP ⏭</button>
       </section>
 
       <section class="ev-card">
@@ -165,7 +165,7 @@
           <h3>PLAYERS (<span id="q-count">0</span>)</h3>
         </div>
         <div id="q-list"></div>
-        <p class="live-note">TAP ▶ TO PLAY · LIVE · <span id="last-upd"></span></p>
+        <p class="live-note">TAP ▶ TO START · LIVE · <span id="last-upd"></span></p>
       </section>
     </div>
   </main>
@@ -218,7 +218,7 @@
             `<span class="who"><b>${esc(w.display_name || w.username)}</b><span>${esc(w.created_at || '')}</span></span>` +
             `<button class="btn-play-q" onclick="pick('${esc(w.username)}')">▶</button>` +
             `<button class="btn-x" onclick="removeQ('${esc(w.username)}')">✕</button></div>`
-          ).join('') || '<p class="q-empty">No players yet. Tap PLAY on your phone to compete!</p>';
+          ).join('') || '<p class="q-empty">No players yet — join from your phone to play!</p>';
         }
         $('#last-upd').textContent = 'updated ' + new Date().toLocaleTimeString();
       } catch (e) { Swal.fire({ icon: 'error', title: 'Error', text: e.message, confirmButtonColor: '#0a2a6e' }); }
@@ -243,13 +243,13 @@
       try {
         // SKIP = akhiri game berjalan, kembali idle. Penentu berikut via PLAY di HP.
         const r = await api('/api/admin/end-game', { method: 'POST' });
-        toast(r.ended ? `${r.ended} skipped — tap PLAY for next!` : 'No game running');
+        toast(r.ended ? `${r.ended} skipped — waiting for the next player…` : 'No game running');
       } catch (e) { Swal.fire({ icon: 'error', title: 'Error', text: e.message, confirmButtonColor: '#0a2a6e' }); }
       refresh();
     }
 
     async function removeQ(username) {
-      const c = await Swal.fire({ icon: 'warning', title: `Remove ${username}?`, text: 'Remove player?', showCancelButton: true, confirmButtonColor: '#e1251b' });
+      const c = await Swal.fire({ icon: 'warning', title: `Remove ${username}?`, text: 'Remove from line?', showCancelButton: true, confirmButtonColor: '#e1251b' });
       if (!c.isConfirmed) return;
       try {
         await api('/api/admin/queue/remove', { method: 'POST', body: JSON.stringify({ username }) });
