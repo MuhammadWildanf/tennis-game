@@ -7,41 +7,70 @@
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="event.css" />
   <style>
-    .sb-title { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
-    .sb-title svg { width: 52px; height: 52px; flex: none; }
-    .sb-title h2 { color: #fff; font-weight: 600; font-size: 29px; letter-spacing: .02em; }
-    .sb-head {
-      display: grid; grid-template-columns: 52px 1fr auto;
-      font-family: 'Astonpoliz', sans-serif; font-size: 13px; letter-spacing: .12em;
-      color: rgba(255,255,255,.85); padding: 0 18px; margin-bottom: 6px;
+    .ev-card.lb-plain { background: transparent; border: none; box-shadow: none; padding: 0; }
+    .lb-title {
+      font-style: italic; font-weight: 900; font-size: 42px; line-height: 1;
+      text-align: center; letter-spacing: .01em;
+      background: linear-gradient(180deg, #ffffff 25%, #bfe9ff 50%, #37a4f2 72%, #e8f7ff 100%);
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+      filter: drop-shadow(0 2px 0 #0a2a6e) drop-shadow(0 5px 10px rgba(0,0,0,.55));
+      margin-bottom: 6px;
     }
-    .sb-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+    .lb-sub {
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      color: #d6e9ff; font-weight: 800; font-size: 12px; letter-spacing: .32em; text-indent: .32em;
+      margin-bottom: 14px;
+    }
+    .lb-sub::before, .lb-sub::after {
+      content: ''; height: 2px; width: 60px; border-radius: 2px;
+      background: linear-gradient(90deg, transparent, #5eb6ff);
+    }
+    .lb-sub::after { background: linear-gradient(90deg, #5eb6ff, transparent); }
+    .lb-panel {
+      background: linear-gradient(180deg, rgba(10,34,88,.88), rgba(4,16,48,.92));
+      border: 1.5px solid rgba(90,175,255,.55); border-radius: 22px;
+      padding: 14px 12px;
+      box-shadow: 0 0 26px rgba(60,140,255,.35), inset 0 0 34px rgba(30,90,200,.16);
+    }
+    .sb-list { list-style: none; display: flex; flex-direction: column; gap: 7px; }
     .sb-row {
-      display: grid; grid-template-columns: 52px 1fr auto; align-items: center;
-      background: #fff; border: 3px solid transparent; border-radius: 999px;
-      padding: 9px 18px 9px 0; color: #101010;
+      display: grid; grid-template-columns: 46px 1fr auto; align-items: center;
+      background: linear-gradient(180deg, rgba(22,64,136,.55), rgba(8,26,66,.65));
+      border: 1px solid rgba(90,170,255,.38); border-radius: 12px;
+      padding: 5px 14px 5px 5px; color: #fff;
+      position: relative; overflow: hidden;
     }
-    .sb-row.top1 { border-color: #e1251b; background: linear-gradient(180deg, #fff8e1, #fff); }
-    .sb-row .rank { color: #e1251b; font-size: 19px; text-align: center; }
-    .sb-row:not(.top1) .rank { color: #8a6d00; }
+    .sb-row::after {
+      content: ''; position: absolute; top: 0; bottom: 0; right: 9%; width: 30px;
+      background: linear-gradient(105deg, transparent, rgba(130,195,255,.16), transparent);
+      transform: skewX(-20deg); pointer-events: none;
+    }
+    .sb-badge {
+      width: 38px; height: 38px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 900; font-size: 17px; color: #fff;
+      background: rgba(70,140,230,.28); border: 1px solid rgba(120,190,255,.5);
+    }
+    .sb-row.top1 { border-color: #ffc93c; box-shadow: 0 0 14px rgba(255,200,60,.55), inset 0 0 18px rgba(255,190,40,.14); }
+    .sb-row.top1 .sb-badge { background: linear-gradient(180deg, #ffe27a, #f5a623); border-color: #ffedb5; color: #5a3400; font-size: 20px; }
+    .sb-row.top2 .sb-badge { background: linear-gradient(180deg, #f2f5f9, #9aa7b8); border-color: #e2e8f0; color: #33404f; }
+    .sb-row.top3 .sb-badge { background: linear-gradient(180deg, #ffc48a, #c96a1e); border-color: #ffd9ab; color: #4d2400; }
+    .sb-row .rank { display: none; }
     .sb-row .name {
-      font-family: 'Basenji', sans-serif; font-size: 17px; letter-spacing: .02em;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-      border-left: 3px solid #e1251b; border-right: 3px solid #e1251b;
-      padding: 0 10px;
+      font-size: 17px; font-weight: 800; letter-spacing: .02em; color: #fff;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 10px;
     }
-    .sb-row .score { font-family: 'Basenji', sans-serif; font-size: 17px; padding-left: 10px; white-space: nowrap; }
-    .sb-row .score::after { content: ' PTS'; }
-    .sb-row.you { box-shadow: 0 0 0 3px #7cc4ff; }
+    .sb-row .score { font-size: 17px; font-weight: 800; color: #ffd75e; padding-left: 10px; white-space: nowrap; }
+    .sb-row .score::after { content: ' PTS'; font-size: 12px; }
+    .sb-row.you { box-shadow: 0 0 0 2px #7cc4ff; }
     .sb-empty { text-align: center; color: #fff; font-size: 15px; padding: 14px 0; }
-    .sb-note { text-align: center; font-size: 11px; color: rgba(255,255,255,.6); margin-top: 12px; font-family: 'Astonpoliz', sans-serif; letter-spacing: .08em; }
+    .sb-note { text-align: center; font-size: 11px; color: rgba(255,255,255,.6); margin-top: 12px; letter-spacing: .08em; }
     /* List sampai 20: rapat + ramping di layar kecil */
     @media (max-width: 360px) {
-      .sb-head { grid-template-columns: 44px 1fr auto; padding: 0 12px; }
-      .sb-row { grid-template-columns: 44px 1fr auto; padding: 7px 12px 7px 0; }
-      .sb-row .rank { font-size: 16px; }
+      .lb-title { font-size: 34px; }
+      .sb-row { grid-template-columns: 40px 1fr auto; padding: 4px 10px 4px 4px; }
+      .sb-badge { width: 32px; height: 32px; font-size: 15px; border-radius: 8px; }
       .sb-row .name, .sb-row .score { font-size: 15px; }
-      .sb-title h2 { font-size: 25px; }
     }
   </style>
 </head>
@@ -50,31 +79,16 @@
   <div class="ev-footwave" aria-hidden="true"><img src="assets/image/footer-wave.png" alt="" /></div>
 
   <main class="app ev-app">
-    <header>
-      <p class="ev-symposium">CITI WEALTH SYMPOSIUM</p>
-      <img class="ev-title" src="assets/image/title.png" alt="Tennis Challenge" />
-      <p class="ev-tagline">PLAY <i>•</i> COMPETE <i>•</i> CONNECT</p>
-      <img class="ev-logo" src="assets/image/logo.png" alt="Citi | Mastercard" />
-    </header>
-
-    <!-- Halaman 3: leaderboard -->
-    <section class="ev-card">
-      <div class="sb-title">
-        <svg viewBox="0 0 64 64" aria-hidden="true">
-          <path fill="#fff" d="M20 8h24v6h8v4c0 7-5 12.5-12 13.4A12 12 0 0 1 35 40.6V48h6v6H23v-6h6v-7.4a12 12 0 0 1-5-9.2C17 30.5 12 25 12 18v-4h8V8zm-4 12c0 4.5 3 8.3 7 9.4A16 16 0 0 1 24 20h-8zm32 0h-8a16 16 0 0 1-1 9.4c4-1.1 7-4.9 7-9.4z"/>
-        </svg>
-        <h2>LEADERBOARDS</h2>
+    <!-- Halaman 3: leaderboard Top 20 (tanpa hero, langsung isi) -->
+    <section class="ev-card lb-plain">
+      <div class="lb-title">LEADERBOARD</div>
+      <div class="lb-sub">TOP 20 PLAYERS</div>
+      <div class="lb-panel">
+        <div id="sb-empty" class="sb-empty hidden"><p>No scores yet — be the first on the board!</p></div>
+        <ul id="sb-list" class="sb-list"></ul>
       </div>
-      <div class="sb-head"><span>POS</span><span>NAME</span><span>SCORE</span></div>
-      <div id="sb-empty" class="sb-empty hidden"><p>No scores yet — be the first on the board!</p></div>
-      <ul id="sb-list" class="sb-list"></ul>
-      <p class="sb-note">TOP 20 · LIVE · <span id="sb-upd"></span></p>
+      <p class="sb-note">LIVE · <span id="sb-upd"></span></p>
     </section>
-
-    <nav class="ev-links">
-      <a href="/">← ALIAS</a>
-      <a href="/join">QUEUE →</a>
-    </nav>
   </main>
 
   <script>
@@ -97,12 +111,14 @@
           } catch (_) {}
         }
         $('#sb-empty').classList.toggle('hidden', rows.length > 0);
-        $('#sb-list').innerHTML = rows.map((p) =>
-          `<li class="sb-row${p.rank === 1 ? ' top1' : ''}${me && p.username === me ? ' you' : ''}">` +
-          `<span class="rank"># ${p.rank ?? '–'}</span>` +
+        $('#sb-list').innerHTML = rows.map((p) => {
+          const cls = p.rank === 1 ? ' top1' : p.rank === 2 ? ' top2' : p.rank === 3 ? ' top3' : '';
+          const badge = p.rank === 1 ? '🏆' : (p.rank ?? '–');
+          return `<li class="sb-row${cls}${me && p.username === me ? ' you' : ''}">` +
+          `<span class="sb-badge">${badge}</span>` +
           `<span class="name">${esc(p.display_name || p.username)}</span>` +
-          `<span class="score">${p.best_score}</span></li>`
-        ).join('');
+          `<span class="score">${p.best_score}</span></li>`;
+        }).join('');
         $('#sb-upd').textContent = 'updated ' + new Date().toLocaleTimeString();
       } catch (_) {}
     }

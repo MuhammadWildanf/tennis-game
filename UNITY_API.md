@@ -167,7 +167,7 @@ QR statis `/join` boleh dipasang di mana saja (game, poster, pintu masuk) — se
 | URL | Fungsi |
 |---|---|
 | `GET /qr/join.png` | **gambar QR** — request via IP LAN agar isinya URL LAN. Statis, tidak expired, boleh dicetak |
-| `/join` | halaman HP: alias → nomor antrian → thanks + Play Again (usher yang mulai game) |
+| `/join` | halaman HP: alias → Welcome + READY → tunggu dipanggil usher → thanks → leaderboard |
 | `/queue` | halaman staff: Now Playing + antrian + tombol ▶/Skip/✕, auto-refresh |
 | `/display` | **layar game versi browser**: QR besar + Now Playing + antrian + Top 5, auto-refresh. Buka fullscreen (F11) — Unity tidak perlu bikin UI QR sama sekali |
 | `/` | halaman HP: alias → otomatis ke `/join` |

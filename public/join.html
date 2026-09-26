@@ -58,33 +58,22 @@
         <span class="btn-label">READY</span>
         <span class="btn-spinner"></span>
       </button>
-      <div class="mini-links"><button onclick="switchAlias()">Use different alias</button></div>
     </section>
 
     <!-- State 3: dalam antrian -->
     <section id="join-status" class="ev-card hidden">
-      <h2 id="queue-title">GET READY...</h2>
+      <h2 id="queue-title">ARE YOU READY?</h2>
       <div class="ev-pill queue-name" id="queue-name">–</div>
       <p class="queue-msg" id="queue-msg">Please wait…</p>
       <div class="mini-links"><button onclick="leaveQueue()">Leave line</button></div>
     </section>
 
-    <!-- State 4: selesai main -->
+    <!-- State 4: selesai main -> otomatis ke leaderboard -->
     <section id="join-done" class="ev-card hidden">
       <h2>THANKS FOR<br />PLAYING!</h2>
       <p class="ev-hint">Your score is on the leaderboard.</p>
-      <button class="ev-btn" id="again-btn" onclick="showIdle()">
-        <span class="btn-label">PLAY AGAIN ✓</span>
-        <span class="btn-spinner"></span>
-      </button>
-      <div class="mini-links"><button onclick="switchAlias()">Use different alias</button></div>
-      <nav class="ev-links"><a href="/scoreboard">LEADERBOARDS →</a></nav>
+      <a class="ev-btn" href="/scoreboard">VIEW LEADERBOARD →</a>
     </section>
-
-    <nav class="ev-links">
-      <a href="/">← ALIAS</a>
-      <a href="/scoreboard">LEADERBOARDS →</a>
-    </nav>
   </main>
 
   <div id="toast" class="toast hidden"><span id="toast-text"></span></div>
@@ -162,7 +151,7 @@
       loading(btn, true);
       try {
         const st = await api('/api/queue/state');
-        if (st.current) {
+        if (st.current || st.total_waiting > 0) {
           await Swal.fire({ icon: 'info', title: 'Another player is playing', text: 'Please try again later!', confirmButtonText: 'CLOSE', confirmButtonColor: '#0a2a6e' });
           return;
         }
@@ -178,7 +167,11 @@
         pollTimer = pollTimer || setInterval(refreshStatus, 3000);
         await refreshStatus();
       } catch (err) {
-        toast(err.message);
+        if (/busy|try again later/i.test(err.message || '')) {
+          await Swal.fire({ icon: 'info', title: 'Another player is playing', text: 'Please try again later!', confirmButtonText: 'CLOSE', confirmButtonColor: '#0a2a6e' });
+        } else {
+          toast(err.message);
+        }
       } finally {
         loading(btn, false);
       }
@@ -188,8 +181,24 @@
       try {
         const s = await api('/api/queue/my-status');
         if (!s.in_queue) {
-          window._lastStatus = s.finished ? 'done' : 'idle';
-          if (s.finished) show('#join-done'); else showIdle();
+          if (s.finished) {
+            // Baru selesai (transisi dari main/antre) -> thanks + lempar leaderboard.
+            // Buka lagi nanti (scan ulang) -> welcome, main lagi nickname sama.
+            if (window._lastStatus === 'current' || window._lastStatus === 'waiting') {
+              window._lastStatus = 'done';
+              show('#join-done');
+              if (!window._doneRedirect) {
+                window._doneRedirect = true;
+                setTimeout(() => { location.href = '/scoreboard'; }, 4000);
+              }
+            } else {
+              window._lastStatus = 'done';
+              showIdle();
+            }
+          } else {
+            window._lastStatus = 'idle';
+            showIdle();
+          }
           return;
         }
         show('#join-status');
@@ -252,13 +261,8 @@
     async function leaveQueue() {
       try { await api('/api/queue/leave', { method: 'POST' }); } catch (_) {}
       clearInterval(pollTimer);
+      pollTimer = null;
       location.href = '/';
-    }
-    function switchAlias() {
-      authToken = null;
-      localStorage.removeItem('ct_token');
-      show('#alias-wrap');
-      aliasInput.focus();
     }
 
     (async function boot() {
@@ -269,9 +273,10 @@
           show('#join-status');
           pollTimer = setInterval(refreshStatus, 3000);
           await refreshStatus();
-        } else if (s.finished) {
-          show('#join-done');
         } else {
+          // Selesai maupun belum antre: ke Welcome (main lagi nickname sama).
+          // Layar thanks hanya muncul sesaat tepat setelah selesai via polling.
+          window._lastStatus = s.finished ? 'done' : 'idle';
           showIdle();
         }
       } catch (_) {

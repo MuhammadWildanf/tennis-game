@@ -144,3 +144,20 @@ input.ev-pill.err { box-shadow: 0 0 0 3px #e1251b; }
   .ev-symposium { font-size: 22px; }
   .ev-card h2 { font-size: 38px; }
 }
+
+/* ─── Font event: Helvetica (+bold), timpa Basenji/Astonpoliz/Inter ─── */
+.ev-body, .ev-body input, .ev-body button, .ev-body select {
+  font-family: 'Helvetica Neue', Helvetica, Arial, 'Segoe UI', sans-serif !important;
+}
+/* Helvetica tidak butuh letter-spacing lebar: rapatkan */
+.ev-symposium, .ev-tagline, .ev-hint, .ev-links a, .mini-links button,
+.sb-head, .sb-note, .q-row .who span, .live-note, .queue-msg {
+  letter-spacing: .04em !important;
+  text-indent: 0 !important;
+}
+/* Bold untuk judul, tombol, nama, skor */
+.ev-card h2, .ev-btn, .ev-pill, .queue-name, .queue-msg.big,
+.now-name, .q-row .who b, .q-row .n,
+.sb-row .name, .sb-row .score, .sb-title h2 {
+  font-weight: 800 !important;
+}

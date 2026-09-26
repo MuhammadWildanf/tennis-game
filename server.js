@@ -456,6 +456,13 @@ function queuePosition(userId) {
 // finished players rejoin at the back of the line)
 app.post('/api/queue/join', authMiddleware, (req, res) => {
   const ex = db.prepare('SELECT * FROM queue WHERE user_id = ?').get(req.user.id);
+  // Gabung (baru) hanya saat stasiun bebas: tidak ada yang main & tidak ada yang antre.
+  // Yang sudah di dalam (waiting/current) tetap boleh (idempotent).
+  if (!ex || (ex.status !== 'waiting' && ex.status !== 'current')) {
+    const busy = db.prepare("SELECT 1 FROM queue WHERE status = 'current'").get()
+      || db.prepare("SELECT 1 FROM queue WHERE status = 'waiting' AND user_id != ?").get(req.user.id);
+    if (busy) return res.status(409).json({ error: 'Station is busy — please try again later', reason: 'playing' });
+  }
   if (!ex) {
     db.prepare("INSERT INTO queue (user_id, status) VALUES (?, 'waiting')").run(req.user.id);
   } else if (ex.status !== 'waiting' && ex.status !== 'current') {
@@ -646,15 +653,21 @@ function getRound() {
   return currentRound;
 }
 app.post('/api/queue/compete', authMiddleware, (req, res) => {
-  const ms = Date.now();
-  const round = getRound();
-  try { db.prepare('INSERT INTO play_clicks (user_id, username, round, click_ms) VALUES (?,?,?,?)').run(req.user.id, req.user.username, round, ms); } catch(_) {}
-
+  // Satu waktu cuma 1 pemain: tolak kalau stasiun sibuk (ada yang main)
+  // atau sudah ada yang antre (selain diri sendiri).
   const hasCurrent = db.prepare("SELECT 1 FROM queue WHERE status='current'").get();
   if (hasCurrent) {
     const pos = queuePosition(req.user.id);
     return res.json({ success: false, reason: 'playing', position: pos.position || null, message: 'Someone is playing — please wait' });
   }
+  const othersWaiting = db.prepare("SELECT COUNT(*) AS c FROM queue WHERE status='waiting' AND user_id != ?").get(req.user.id).c;
+  if (othersWaiting > 0) {
+    return res.json({ success: false, reason: 'playing', position: null, message: 'Someone is in line — please try again later' });
+  }
+
+  const ms = Date.now();
+  const round = getRound();
+  try { db.prepare('INSERT INTO play_clicks (user_id, username, round, click_ms) VALUES (?,?,?,?)').run(req.user.id, req.user.username, round, ms); } catch(_) {}
   // No one playing: record click, pick fastest for display (usher-driven:
   // HP PLAY cuma antre, Unity baru mulai setelah usher klik PLAY di /queue,
   // atau usher klik X untuk batalkan pemain)
