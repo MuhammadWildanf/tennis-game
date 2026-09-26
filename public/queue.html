@@ -10,7 +10,7 @@
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <style>
     .now-label {
-      font-family: 'Astonpoliz', sans-serif;
+      font-family: 'Helvetica Neue', Helvetica, Arial, 'Segoe UI', sans-serif;
       text-align: center;
       font-size: 13px;
       letter-spacing: .3em;
@@ -29,7 +29,7 @@
     }
 
     .now-sub {
-      font-family: 'Astonpoliz', sans-serif;
+      font-family: 'Helvetica Neue', Helvetica, Arial, 'Segoe UI', sans-serif;
       text-align: center;
       color: rgba(255, 255, 255, .9);
       font-size: 15px;
@@ -88,7 +88,7 @@
       display: block;
       font-size: 11px;
       color: rgba(0, 0, 0, .5);
-      font-family: 'Astonpoliz', sans-serif;
+      font-family: 'Helvetica Neue', Helvetica, Arial, 'Segoe UI', sans-serif;
       letter-spacing: .06em;
     }
 
@@ -134,7 +134,7 @@
       font-size: 11px;
       color: rgba(255, 255, 255, .6);
       margin-top: 12px;
-      font-family: 'Astonpoliz', sans-serif;
+      font-family: 'Helvetica Neue', Helvetica, Arial, 'Segoe UI', sans-serif;
       letter-spacing: .08em;
     }
   </style>
@@ -146,14 +146,12 @@
 
   <main class="app ev-app">
     <header>
-      <p class="ev-symposium">CITI WEALTH SYMPOSIUM</p>
       <img class="ev-title" src="assets/image/title.png" alt="Tennis Challenge" />
-      <p class="ev-tagline">PLAY <i>•</i> COMPETE <i>•</i> CONNECT</p>
       <img class="ev-logo" src="assets/image/logo.png" alt="Citi | Mastercard" />
     </header>
 
     <div class="ev-cols">
-      <section class="ev-card">
+      <section class="ev-card" id="now-card">
         <div class="now-label">NOW PLAYING</div>
         <div class="now-name" id="now-name">–</div>
         <div class="now-sub" id="now-sub">–</div>
@@ -165,7 +163,7 @@
           <h3>PLAYERS (<span id="q-count">0</span>)</h3>
         </div>
         <div id="q-list"></div>
-        <p class="live-note">TAP ▶ TO START · LIVE · <span id="last-upd"></span></p>
+        <p class="live-note">TAP ▶ TO START</p>
       </section>
     </div>
   </main>
@@ -203,14 +201,15 @@
           $('#now-sub').textContent = 'Playing… 🎾';
         } else {
           $('#now-name').textContent = '–';
-          $('#now-sub').textContent = s.total_waiting ? 'Ready to call ↓' : 'No players yet';
+          $('#now-sub').textContent = s.total_waiting ? 'Tap ▶ on a player to start' : 'No players yet';
         }
         const playersCard = document.querySelector('.q-head').closest('.ev-card');
+        const nowCard = $('#now-card');
         if (s.current) {
-          $('#q-count').textContent = '—';
-          $('#q-list').innerHTML = '<p class="q-empty">Game in progress — please wait until the game finishes.</p>';
-          if (playersCard) playersCard.style.opacity = '0.5';
+          if (nowCard) nowCard.style.display = '';
+          if (playersCard) playersCard.style.display = 'none';
         } else {
+          if (nowCard) nowCard.style.display = 'none';
           if (playersCard) playersCard.style.opacity = '1';
           $('#q-count').textContent = s.total_waiting;
           $('#q-list').innerHTML = s.waiting.map((w) =>
@@ -220,7 +219,6 @@
             `<button class="btn-x" onclick="removeQ('${esc(w.username)}')">✕</button></div>`
           ).join('') || '<p class="q-empty">No players yet — join from your phone to play!</p>';
         }
-        $('#last-upd').textContent = 'updated ' + new Date().toLocaleTimeString();
       } catch (e) { Swal.fire({ icon: 'error', title: 'Error', text: e.message, confirmButtonColor: '#0a2a6e' }); }
     }
 

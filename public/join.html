@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -9,53 +10,75 @@
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <style>
     .queue-msg {
-      font-family: 'Astonpoliz', sans-serif;
-      text-align: center; color: #fff;
-      font-size: 17px; letter-spacing: .06em; margin-top: 18px; line-height: 1.5;
+      font-family: 'Helvetica Neue', Helvetica, Arial, 'Segoe UI', sans-serif;
+      text-align: center;
+      color: #fff;
+      font-size: 17px;
+      letter-spacing: .06em;
+      margin-top: 18px;
+      line-height: 1.5;
     }
-    .queue-msg.big { font-family: 'Basenji', sans-serif; font-size: 30px; letter-spacing: .02em; }
-    .queue-name { margin-top: 18px; }
-    .mini-links { text-align: center; margin-top: 16px; }
+
+    .queue-msg.big {
+      font-family: 'Helvetica Neue', Helvetica, Arial, 'Segoe UI', sans-serif;
+      font-size: 30px;
+      letter-spacing: .02em;
+    }
+
+    .queue-name {
+      margin-top: 18px;
+    }
+
+    .mini-links {
+      text-align: center;
+      margin-top: 16px;
+    }
+
     .mini-links button {
-      background: none; border: none; cursor: pointer; font-family: 'Astonpoliz', sans-serif;
-      color: rgba(255,255,255,.85); font-size: 14px; letter-spacing: .08em;
-      text-decoration: none; margin: 0 8px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-family: 'Helvetica Neue', Helvetica, Arial, 'Segoe UI', sans-serif;
+      color: rgba(255, 255, 255, .85);
+      font-size: 14px;
+      letter-spacing: .08em;
+      text-decoration: none;
+      margin: 0 8px;
     }
   </style>
 </head>
+
 <body class="ev-body">
   <div class="ev-veil" aria-hidden="true"></div>
   <div class="ev-footwave" aria-hidden="true"><img src="assets/image/footer-wave.png" alt="" /></div>
 
   <main class="app ev-app">
     <header>
-      <p class="ev-symposium">CITI WEALTH SYMPOSIUM</p>
       <img class="ev-title" src="assets/image/title.png" alt="Tennis Challenge" />
-      <p class="ev-tagline">PLAY <i>•</i> COMPETE <i>•</i> CONNECT</p>
       <img class="ev-logo" src="assets/image/logo.png" alt="Citi | Mastercard" />
     </header>
 
     <!-- State 1: isi alias dulu -->
     <section id="alias-wrap" class="ev-card hidden">
-      <h2>ENTER<br />YOUR ALIAS</h2>
+      <h2>ENTER<br />YOUR NICKNAME</h2>
       <form id="join-alias-form" novalidate>
         <input type="text" class="ev-pill" id="join-alias-input" placeholder="Nickname" maxlength="12"
-               autocomplete="off" autocapitalize="characters" spellcheck="false" />
+          autocomplete="off" autocapitalize="characters" spellcheck="false" />
         <p class="ev-hint">use 2 – 12 characters ( A-Z , 0-9 )</p>
         <p id="join-alias-error" class="form-error"></p>
         <button type="submit" class="ev-btn" id="join-ready-btn">
-          <span class="btn-label">CONTINUE</span>
+          <span class="btn-label">SUBMIT</span>
           <span class="btn-spinner"></span>
         </button>
       </form>
     </section>
 
-    <!-- State 2: welcome + READY -->
+    <!-- State 2: ARE YOU READY + nama + PLAY -->
     <section id="join-idle" class="ev-card hidden">
-      <h2 id="join-welcome">Welcome!</h2>
-      <p class="ev-hint">Press READY to play!</p>
+      <h2>ARE YOU<br />READY?</h2>
+      <div class="ev-pill queue-name" id="idle-name">–</div>
       <button class="ev-btn" id="join-btn" onclick="readyToPlay()">
-        <span class="btn-label">READY</span>
+        <span class="btn-label">PLAY</span>
         <span class="btn-spinner"></span>
       </button>
     </section>
@@ -65,7 +88,6 @@
       <h2 id="queue-title">ARE YOU READY?</h2>
       <div class="ev-pill queue-name" id="queue-name">–</div>
       <p class="queue-msg" id="queue-msg">Please wait…</p>
-      <div class="mini-links"><button onclick="leaveQueue()">Leave line</button></div>
     </section>
 
     <!-- State 4: selesai main -> otomatis ke leaderboard -->
@@ -93,7 +115,7 @@
       return data;
     }
     function toast(t) {
-      Swal.fire({ icon:'info', title: t, confirmButtonColor:'#0a2a6e', timer: 2500, showConfirmButton:false });
+      Swal.fire({ icon: 'info', title: t, confirmButtonColor: '#0a2a6e', timer: 2500, showConfirmButton: false });
     }
     function loading(btn, on) {
       if (!btn.dataset.label) btn.dataset.label = btn.querySelector('.btn-label').textContent;
@@ -122,7 +144,7 @@
       const alias = aliasInput.value.trim().toUpperCase();
       const errEl = $('#join-alias-error');
       errEl.classList.remove('show');
-      if (alias.length < 2) { errEl.textContent = 'Alias must be 2–12 characters.'; errEl.classList.add('show'); return; }
+      if (alias.length < 2) { errEl.textContent = 'Nickname must be 2–12 characters.'; errEl.classList.add('show'); return; }
       const btn = $('#join-ready-btn');
       loading(btn, true);
       try {
@@ -158,7 +180,7 @@
         await api('/api/queue/join', { method: 'POST' });
         const r = await api('/api/queue/compete', { method: 'POST' });
         if (r.reason === 'playing') {
-          try { await api('/api/queue/leave', { method: 'POST' }); } catch (_) {}
+          try { await api('/api/queue/leave', { method: 'POST' }); } catch (_) { }
           await Swal.fire({ icon: 'info', title: 'Another player is playing', text: 'Please try again later!', confirmButtonText: 'CLOSE', confirmButtonColor: '#0a2a6e' });
           return;
         }
@@ -208,7 +230,8 @@
         $('#queue-name').textContent = (localStorage.getItem('ct_user') || '').toUpperCase() || '–';
         if (s.status === 'current') {
           title.innerHTML = 'YOUR TURN!';
-          msg.textContent = 'Your game is starting — head to the court! 🎾';
+          msg.style.display = '';
+          msg.textContent = `YOU'RE PLAYING`;
           msg.classList.add('big');
           // Popup hanya saat transisi (tadi waiting, sekarang giliranmu) —
           // buka/refresh halaman langsung diam, cukup tampilkan YOUR TURN.
@@ -229,12 +252,13 @@
             if (isPlaying) {
               const who = st.current.display_name || st.current.username;
               title.innerHTML = 'GAME IN PROGRESS';
+              msg.style.display = '';
               msg.classList.remove('big');
               msg.textContent = `${who} is playing… please wait.`;
             } else {
               title.innerHTML = `YOU'RE READY!`;
               msg.classList.remove('big');
-              msg.textContent = 'Please head to the game area and wait to be called.';
+              msg.style.display = 'none';
             }
             if (st.current && window._lastSawPlaying === false && !window._waitingPopupShown) {
               window._waitingPopupShown = true;
@@ -243,26 +267,19 @@
             if (!st.current) window._waitingPopupShown = false;
             window._lastSawPlaying = isPlaying;
             window._lastStatus = s.status;
-          } catch (_) {}
+          } catch (_) { }
         }
-      } catch (_) {}
+      } catch (_) { }
     }
 
     async function showIdle() {
       try {
         const me = await api('/api/profile');
         localStorage.setItem('ct_user', me.username);
-        $('#join-welcome').innerHTML = `Welcome<br />${String(me.username).toUpperCase()}!`;
+        $('#idle-name').textContent = me.username;
         $('#queue-name').textContent = me.username;
       } catch (_) {}
       show('#join-idle');
-    }
-
-    async function leaveQueue() {
-      try { await api('/api/queue/leave', { method: 'POST' }); } catch (_) {}
-      clearInterval(pollTimer);
-      pollTimer = null;
-      location.href = '/';
     }
 
     (async function boot() {
@@ -274,7 +291,7 @@
           pollTimer = setInterval(refreshStatus, 3000);
           await refreshStatus();
         } else {
-          // Selesai maupun belum antre: ke Welcome (main lagi nickname sama).
+          // Selesai maupun belum antre: ke tombol READY (main lagi nickname sama).
           // Layar thanks hanya muncul sesaat tepat setelah selesai via polling.
           window._lastStatus = s.finished ? 'done' : 'idle';
           showIdle();
@@ -287,4 +304,5 @@
     })();
   </script>
 </body>
+
 </html>

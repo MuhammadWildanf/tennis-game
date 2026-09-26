@@ -50,7 +50,7 @@ async function checkAlias(alias) {
   lastChecked = alias;
   try {
     const data = await api(`/api/check-username/${encodeURIComponent(alias)}`);
-    availEl.textContent = data.available ? '✓ Alias available' : '✗ Already taken';
+    availEl.textContent = data.available ? '✓ Nickname available' : '✗ Already taken';
     availEl.className = 'alias-avail ' + (data.available ? 'ok' : 'bad');
     if (!data.available) aliasInput.classList.add('err');
   } catch (_) {
@@ -66,12 +66,12 @@ $('#alias-form').addEventListener('submit', async (e) => {
 
   errEl.classList.remove('show');
   if (alias.length < 2 || alias.length > 12) {
-    errEl.textContent = 'Alias must be 2–12 characters.';
+    errEl.textContent = 'Nickname must be 2–12 characters.';
     errEl.classList.add('show');
     return;
   }
   if (!/^[A-Z0-9]+$/.test(alias)) {
-    errEl.textContent = 'Alias can only use letters A–Z and numbers 0–9.';
+    errEl.textContent = 'Nickname can only use letters A–Z and numbers 0–9.';
     errEl.classList.add('show');
     return;
   }

@@ -510,8 +510,12 @@ app.get('/api/queue/state', (req, res) => {
   if (!current) {
     const r = currentRound;
     const winner = db.prepare('SELECT username FROM play_clicks WHERE round=? ORDER BY click_ms ASC, id ASC LIMIT 1').get(r);
-    if (winner) waiting = waiting.filter(w => w.username === winner.username).slice(0,1);
-    else waiting = [];
+    // Ada pemenang ronde ini: tampilkan dia. Pemenang sudah tidak antre
+    // (mis. di-cancel) atau ronde basi: tampilkan semua agar tak ada yang hilang.
+    if (winner) {
+      const f = waiting.filter(w => w.username === winner.username).slice(0, 1);
+      waiting = f.length ? f : waiting;
+    }
   }
   res.json({ current, waiting, total_waiting: waiting.length });
 });
@@ -715,7 +719,8 @@ app.post('/api/admin/end-game', (req, res) => {
   const cur = db.prepare("SELECT user_id, username FROM queue q JOIN users u ON u.id=q.user_id WHERE q.status='current'").get();
   db.prepare("UPDATE queue SET status='done', updated_at=datetime('now') WHERE status='current'").run();
   if (cur) try { db.prepare("DELETE FROM active_sessions WHERE user_id=? AND purpose='turn'").run(cur.user_id); } catch(_){}
-  currentRound += 1;
+  // Ronde baru hanya kalau ada game yang benar-benar berakhir (idle-SKIP tidak memajukan ronde)
+  if (cur) currentRound += 1;
   res.json({ success: true, ended: cur ? cur.username : null });
 });
 app.get('/api/admin/backup', (req, res) => {

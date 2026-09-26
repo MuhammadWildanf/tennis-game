@@ -1,56 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Tennis Challenge — Citi Wealth Symposium</title>
-  <link rel="stylesheet" href="style.css" />
-  <link rel="stylesheet" href="event.css" />
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <meta http-equiv="refresh" content="0; url=/join" />
+  <script>location.replace('/join');</script>
 </head>
-
-<body class="ev-body">
-  <div class="ev-veil" aria-hidden="true"></div>
-  <div class="ev-footwave" aria-hidden="true"><img src="assets/image/footer-wave.png" alt="" /></div>
-
-  <main class="app ev-app">
-    <header>
-      <p class="ev-symposium">CITI WEALTH SYMPOSIUM</p>
-      <img class="ev-title" src="assets/image/title.png" alt="Tennis Challenge" />
-      <p class="ev-tagline">PLAY <i>•</i> COMPETE <i>•</i> CONNECT</p>
-      <img class="ev-logo" src="assets/image/logo.png" alt="Citi | Mastercard" />
-
-      <div id="player-chip" class="ev-chip hidden">
-        <span class="chip-avatar" id="chip-avatar">J</span>
-        <span class="chip-name" id="chip-name">NICKNAME</span>
-        <span class="chip-best" id="chip-best">BEST 0</span>
-        <button onclick="logout()" title="Log out">✕</button>
-      </div>
-    </header>
-
-    <!-- Halaman 1: alias -->
-    <section id="regis-section" class="ev-card">
-      <h2>ENTER<br />YOUR ALIAS</h2>
-      <form id="alias-form" novalidate>
-        <div class="alias-field">
-          <input type="text" class="ev-pill" id="alias-input" placeholder="Nickname" maxlength="12" autocomplete="off"
-            autocapitalize="characters" spellcheck="false" />
-        </div>
-        <p class="ev-hint">use 2 – 12 characters ( A-Z , 0-9 )</p>
-        <p id="alias-avail" class="alias-avail"></p>
-        <p id="alias-error" class="form-error"></p>
-        <button type="submit" class="ev-btn" id="ready-btn">
-          <span class="btn-label">CONTINUE</span>
-          <span class="btn-spinner"></span>
-        </button>
-      </form>
-    </section>
-  </main>
-
-  <div id="toast" class="toast hidden"><span id="toast-text"></span></div>
-
-  <script src="app.js"></script>
+<body>
+  <p>Redirecting… <a href="/join">Continue to Tennis Challenge →</a></p>
 </body>
-
 </html>
