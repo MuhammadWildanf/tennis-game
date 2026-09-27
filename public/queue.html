@@ -7,8 +7,23 @@
   <title>Tennis Challenge — Citi Wealth Symposium</title>
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="event.css" />
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <style>
+    #qr-card img {
+      width: 140px;
+      height: 140px;
+      background: #fff;
+      padding: 8px;
+      border-radius: 12px;
+      margin-top: 8px;
+    }
+
+    #qr-card .qr-url {
+      margin-top: 8px;
+      font-size: 12px;
+      color: rgba(255, 255, 255, .75);
+      word-break: break-all;
+    }
+
     .now-label {
       font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;
       text-align: center;
@@ -160,7 +175,10 @@
           <h3>PLAYERS (<span id="q-count">0</span>)</h3>
         </div>
         <div id="q-list"></div>
-        <p class="live-note">TAP ▶ TO START</p>
+      </section>
+      <section class="ev-card" id="qr-card" style="text-align:center">
+        <div class="now-label">SCAN TO JOIN</div>
+        <img src="/qr/join.png" alt="Join QR" id="qr-img" />
       </section>
     </div>
   </main>
