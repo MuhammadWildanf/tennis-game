@@ -13,6 +13,18 @@
       margin-top: 18px;
     }
 
+    #join-alias-error {
+      margin-bottom: 12px;
+    }
+
+    #idle-note {
+      margin: 0 0 10px;
+    }
+
+    #idle-note:empty {
+      display: none;
+    }
+
     .queue-msg {
       font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;
       text-align: center;
@@ -63,11 +75,11 @@
     <!-- State 1: isi nickname dulu -->
     <section id="alias-wrap" class="ev-card hidden">
       <h2>Enter your nickname</h2>
+      <p id="join-alias-error" class="form-error" style="text-align:center"></p>
       <form id="join-alias-form" novalidate>
         <input type="text" class="ev-pill" id="join-alias-input" placeholder="Nickname" maxlength="12"
           autocomplete="off" autocapitalize="characters" spellcheck="false" />
         <p class="ev-hint">Use 2-12 Characters (A-Z, 0-9)</p>
-        <p id="join-alias-error" class="form-error"></p>
         <button type="submit" class="ev-btn ev-btn-lime" id="join-ready-btn">
           <span class="btn-label">Submit <span class="btn-arrow">→</span></span>
           <span class="btn-spinner"></span>
@@ -78,13 +90,13 @@
     <!-- State 2: Welcome + nama + READY -->
     <section id="join-idle" class="ev-card hidden">
       <div class="ball-mini"><img src="assets/image/bola.png" alt="" /></div>
+      <p id="idle-note" class="form-error" style="text-align:center"></p>
       <h2 id="join-welcome">Welcome!</h2>
       <p class="ev-hint">Press READY to play!</p>
       <button class="ev-btn ev-btn-play" id="join-btn" onclick="readyToPlay()">
         <span class="btn-label">READY<span class="btn-arrow">→</span></span>
         <span class="btn-spinner"></span>
       </button>
-      <p id="idle-note" class="form-error"></p>
     </section>
 
     <!-- State 3: dalam antrian -->
@@ -152,13 +164,11 @@
         await showIdle();
       } catch (err) {
         if (/taken/i.test(err.message || '') && alias === (localStorage.getItem('ct_user') || '')) {
-          await showIdle(); // nama sendiri (habis Back), lanjut seperti biasa
-        } else if (/taken/i.test(err.message || '')) {
-          await Swal.fire({ icon: 'error', title: 'Nickname already taken', text: 'Please enter a new nickname', confirmButtonText: 'CLOSE', confirmButtonColor: '#0a2a6e' });
-          aliasInput.focus();
+          await showIdle(); // nama sendiri, lanjut seperti biasa
         } else {
-          errEl.textContent = err.message;
+          errEl.textContent = /taken/i.test(err.message || '') ? 'Nickname already taken, please enter a new nickname' : err.message;
           errEl.classList.add('show');
+          aliasInput.focus();
         }
       } finally {
         loading(btn, false);

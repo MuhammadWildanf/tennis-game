@@ -137,7 +137,7 @@
       align-items: center;
       gap: 10px;
       min-height: 44px;
-      padding: 9px 2px;
+      padding: 9px 14px;
       color: #fff;
       border-bottom: 1px solid rgba(255, 255, 255, 0.16);
     }
@@ -172,8 +172,13 @@
     .sb-row.you {
       background: #F2F6FF;
       border: none;
+      border-bottom: none;
       clip-path: none;
       border-radius: 14px;
+      margin: 3px 0;
+      padding: 9px 14px;
+      grid-template-columns: 30px 1fr auto;
+      gap: 10px;
     }
 
     .sb-row.you .rnk,
@@ -185,13 +190,19 @@
 
     .sb-row.you .score {
       border-left-color: rgba(5, 52, 105, 0.3);
+      padding-left: 14px;
     }
 
     .sb-row.top1 {
       background: #d7f75b;
       border: none;
+      border-bottom: none;
       clip-path: none;
       border-radius: 14px;
+      margin: 3px 0;
+      padding: 9px 14px;
+      grid-template-columns: 30px 1fr auto;
+      gap: 10px;
       box-shadow: 0 4px 18px rgba(215, 247, 91, 0.35);
     }
 
@@ -204,6 +215,7 @@
 
     .sb-row.top1 .score {
       border-left-color: rgba(5, 52, 105, 0.35);
+      padding-left: 14px;
     }
 
     .sb-empty {
