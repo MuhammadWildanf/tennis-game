@@ -186,10 +186,6 @@
       }
       return data;
     }
-    function toast(t, icon = 'info') {
-      Swal.fire({ icon, title: t, confirmButtonColor: '#0a2a6e', timer: 2500, showConfirmButton: false });
-    }
-
     async function refresh() {
       try {
         const s = await api('/api/queue/state');
@@ -216,30 +212,27 @@
             `<button class="btn-x" onclick="removeQ('${esc(w.username)}')">✕</button></div>`
           ).join('');
         }
-      } catch (e) { Swal.fire({ icon: 'error', title: 'Error', text: e.message, confirmButtonColor: '#0a2a6e' }); }
+      } catch (e) { console.error(e.message); }
     }
 
     async function pick(username, force) {
       try {
-        const r = await api('/api/queue/pick', { method: 'POST', body: JSON.stringify({ username, force: !!force }) });
-        toast(`${r.current.user.username} is playing!`);
+        await api('/api/queue/pick', { method: 'POST', body: JSON.stringify({ username, force: !!force }) });
       } catch (e) {
         if (e.data && e.data.need_force) {
-          const r = await Swal.fire({ icon: 'warning', title: 'Force switch?', text: e.message, showCancelButton: true, confirmButtonColor: '#0a2a6e', confirmButtonText: 'Force switch' });
-          if (r.isConfirmed) return pick(username, true);
+          if (confirm(e.message + '\n\nForce switch?')) return pick(username, true);
           return;
         }
-        Swal.fire({ icon: 'error', title: 'Error', text: e.message, confirmButtonColor: '#0a2a6e' });
+        console.error(e.message);
       }
       refresh();
     }
 
     async function removeQ(username) {
-      const c = await Swal.fire({ icon: 'warning', title: `Remove ${username}?`, text: 'Remove from line?', showCancelButton: true, confirmButtonColor: '#e1251b' });
-      if (!c.isConfirmed) return;
+      if (!confirm(`Remove ${username} from line?`)) return;
       try {
         await api('/api/admin/queue/remove', { method: 'POST', body: JSON.stringify({ username }) });
-      } catch (e) { Swal.fire({ icon: 'error', title: 'Error', text: e.message, confirmButtonColor: '#0a2a6e' }); }
+      } catch (e) { console.error(e.message); }
       refresh();
     }
 

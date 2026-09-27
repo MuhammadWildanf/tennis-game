@@ -84,6 +84,7 @@
         <span class="btn-label">READY<span class="btn-arrow">→</span></span>
         <span class="btn-spinner"></span>
       </button>
+      <p id="idle-note" class="form-error"></p>
     </section>
 
     <!-- State 3: dalam antrian -->
@@ -164,34 +165,37 @@
       }
     });
 
-    // Flowchart: READY -> cek status game dulu. Sibuk = pesan try-later
-    // (tidak masuk antrian). Idle = join + catat siap + pesan ke area game.
+    // Flowchart: READY -> cek status game dulu. Sibuk = catatan try-later
+    // di halaman (tidak masuk antrian). Idle = join + pesan arena di halaman.
+    function idleNote(t) {
+      const el = $('#idle-note');
+      if (!el) return;
+      el.textContent = t || '';
+      el.classList.toggle('show', !!t);
+    }
     async function readyToPlay() {
       const btn = $('#join-btn');
       loading(btn, true);
+      idleNote('');
+      const busyNote = 'Another player is playing. Please try again later!';
       try {
         const st = await api('/api/queue/state');
         if (st.current || st.total_waiting > 0) {
-          await Swal.fire({ icon: 'info', title: 'Another player is playing', text: 'Please try again later!', confirmButtonText: 'CLOSE', confirmButtonColor: '#0a2a6e' });
+          idleNote(busyNote);
           return;
         }
         await api('/api/queue/join', { method: 'POST' });
         const r = await api('/api/queue/compete', { method: 'POST' });
         if (r.reason === 'playing') {
           try { await api('/api/queue/leave', { method: 'POST' }); } catch (_) { }
-          await Swal.fire({ icon: 'info', title: 'Another player is playing', text: 'Please try again later!', confirmButtonText: 'CLOSE', confirmButtonColor: '#0a2a6e' });
+          idleNote(busyNote);
           return;
         }
-        await Swal.fire({ icon: 'success', title: 'Please head to the game arena', showConfirmButton: false, timer: 2500, confirmButtonColor: '#0a2a6e' });
         show('#join-status');
         pollTimer = pollTimer || setInterval(refreshStatus, 3000);
         await refreshStatus();
       } catch (err) {
-        if (/busy|try again later/i.test(err.message || '')) {
-          await Swal.fire({ icon: 'info', title: 'Another player is playing', text: 'Please try again later!', confirmButtonText: 'CLOSE', confirmButtonColor: '#0a2a6e' });
-        } else {
-          toast(err.message);
-        }
+        idleNote(/busy|try again later/i.test(err.message || '') ? busyNote : err.message);
       } finally {
         loading(btn, false);
       }
@@ -222,48 +226,13 @@
         const title = $('#queue-title');
         const msg = $('#queue-msg');
         $('#queue-name').textContent = (localStorage.getItem('ct_user') || '').toUpperCase() || '–';
-        if (s.status === 'current') {
-          // Operator mulai manual: HP tetap di pesan arena (tidak ganti layar)
-          title.innerHTML = `YOU'RE READY!`;
-          msg.style.display = '';
-          msg.classList.remove('big');
-          msg.textContent = 'Please head to the game arena';
-          // Popup hanya saat transisi (tadi waiting, sekarang giliranmu) —
-          // buka/refresh halaman langsung diam (tetap pesan arena).
-          if (window._lastStatus === 'waiting' && !window._selectedPopupShown) {
-            window._selectedPopupShown = true;
-            Swal.fire({ icon: 'success', title: 'Please head to the game arena', showConfirmButton: false, timer: 2500, confirmButtonColor: '#0a2a6e' });
-          } else {
-            window._selectedPopupShown = true;
-          }
-          window._lastStatus = s.status;
-        } else {
-          window._selectedPopupShown = false;
-          // Saat ada yang main: sembunyikan tombol PLAY biar tidak bingung,
-          // tampilkan siapa yang sedang main. Saat idle: tampilkan PLAY.
-          try {
-            const st = await api('/api/queue/state');
-            const isPlaying = !!st.current;
-            if (isPlaying) {
-              const who = st.current.display_name || st.current.username;
-              title.innerHTML = 'GAME IN PROGRESS';
-              msg.style.display = '';
-              msg.classList.remove('big');
-              msg.textContent = `${who} is playing… please wait.`;
-            } else {
-              title.innerHTML = `YOU'RE READY!`;
-              msg.classList.remove('big');
-              msg.style.display = 'none';
-            }
-            if (st.current && window._lastSawPlaying === false && !window._waitingPopupShown) {
-              window._waitingPopupShown = true;
-              Swal.fire({ icon: 'info', title: 'Please wait', text: `${st.current.username} is playing now — please wait until the game finishes.`, confirmButtonColor: '#0a2a6e' });
-            }
-            if (!st.current) window._waitingPopupShown = false;
-            window._lastSawPlaying = isPlaying;
-            window._lastStatus = s.status;
-          } catch (_) { }
-        }
+        // Sudah READY (waiting/current): selalu pesan arena yang sama,
+        // tanpa popup, sampai selesai main -> leaderboard.
+        title.innerHTML = `YOU'RE READY!`;
+        msg.style.display = '';
+        msg.classList.remove('big');
+        msg.textContent = 'Please head to the game arena';
+        window._lastStatus = s.status;
       } catch (_) { }
     }
 
