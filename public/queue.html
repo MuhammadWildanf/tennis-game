@@ -153,7 +153,6 @@
         <div class="now-label">NOW PLAYING</div>
         <div class="now-name" id="now-name">–</div>
         <div class="now-sub" id="now-sub">–</div>
-        <button class="ev-btn ev-btn-lime" onclick="skip()">SKIP ⏭</button>
       </section>
 
       <section class="ev-card">
@@ -232,15 +231,6 @@
         }
         Swal.fire({ icon: 'error', title: 'Error', text: e.message, confirmButtonColor: '#0a2a6e' });
       }
-      refresh();
-    }
-
-    async function skip() {
-      try {
-        // SKIP = akhiri game berjalan, kembali idle. Penentu berikut via PLAY di HP.
-        const r = await api('/api/admin/end-game', { method: 'POST' });
-        toast(r.ended ? `${r.ended} skipped — waiting for the next player…` : 'No game running');
-      } catch (e) { Swal.fire({ icon: 'error', title: 'Error', text: e.message, confirmButtonColor: '#0a2a6e' }); }
       refresh();
     }
 
