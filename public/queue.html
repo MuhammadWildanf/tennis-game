@@ -195,7 +195,7 @@
         const s = await api('/api/queue/state');
         if (s.current) {
           $('#now-name').textContent = s.current.display_name || s.current.username;
-          $('#now-sub').textContent = 'Playing…';
+          $('#now-sub').textContent = '';
         } else {
           $('#now-name').textContent = '–';
           $('#now-sub').textContent = s.total_waiting ? 'Tap ▶ on a player to start' : 'No players yet';
@@ -214,7 +214,7 @@
             `<span class="who"><b>${esc(w.display_name || w.username)}</b><span>${esc(w.created_at || '')}</span></span>` +
             `<button class="btn-play-q" onclick="pick('${esc(w.username)}')">▶</button>` +
             `<button class="btn-x" onclick="removeQ('${esc(w.username)}')">✕</button></div>`
-          ).join('') || '<p class="q-empty">No players yet — join from your phone to play!</p>';
+          ).join('');
         }
       } catch (e) { Swal.fire({ icon: 'error', title: 'Error', text: e.message, confirmButtonColor: '#0a2a6e' }); }
     }
