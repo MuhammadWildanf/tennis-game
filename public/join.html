@@ -75,11 +75,11 @@
       </form>
     </section>
 
-    <!-- State 2: ARE YOU READY + nama + back/PLAY -->
+    <!-- State 2: Welcome + nama + READY -->
     <section id="join-idle" class="ev-card hidden">
       <div class="ball-mini"><img src="assets/image/bola.png" alt="" /></div>
-      <h2>Are you ready?</h2>
-      <div class="player-name-lime" id="idle-name">–</div>
+      <h2 id="join-welcome">Welcome!</h2>
+      <p class="ev-hint">Press READY to play!</p>
       <button class="ev-btn ev-btn-play" id="join-btn" onclick="readyToPlay()">
         <span class="btn-label">READY<span class="btn-arrow">→</span></span>
         <span class="btn-spinner"></span>
@@ -91,13 +91,6 @@
       <h2 id="queue-title">ARE YOU READY?</h2>
       <div class="ev-pill queue-name" id="queue-name">–</div>
       <p class="queue-msg" id="queue-msg">Please wait…</p>
-    </section>
-
-    <!-- State 4: selesai main -> otomatis ke leaderboard -->
-    <section id="join-done" class="ev-card hidden">
-      <h2>THANKS FOR<br />PLAYING!</h2>
-      <p class="ev-hint">Your score is on the leaderboard.</p>
-      <a class="ev-btn" href="/scoreboard">VIEW LEADERBOARD →</a>
     </section>
   </main>
 
@@ -127,7 +120,7 @@
       btn.disabled = on;
     }
     function hideAll() {
-      for (const id of ['#alias-wrap', '#join-idle', '#join-status', '#join-done']) $(id).classList.add('hidden');
+      for (const id of ['#alias-wrap', '#join-idle', '#join-status']) $(id).classList.add('hidden');
       clearInterval(pollTimer);
       pollTimer = null;
     }
@@ -189,7 +182,7 @@
           await Swal.fire({ icon: 'info', title: 'Another player is playing', text: 'Please try again later!', confirmButtonText: 'CLOSE', confirmButtonColor: '#0a2a6e' });
           return;
         }
-        await Swal.fire({ icon: 'success', title: 'Please head to the game area', confirmButtonText: 'OK', confirmButtonColor: '#0a2a6e' });
+        await Swal.fire({ icon: 'success', title: 'Please head to the game arena', showConfirmButton: false, timer: 2500, confirmButtonColor: '#0a2a6e' });
         show('#join-status');
         pollTimer = pollTimer || setInterval(refreshStatus, 3000);
         await refreshStatus();
@@ -209,15 +202,11 @@
         const s = await api('/api/queue/my-status');
         if (!s.in_queue) {
           if (s.finished) {
-            // Baru selesai (transisi dari main/antre) -> thanks + lempar leaderboard.
-            // Buka lagi nanti (scan ulang) -> welcome, main lagi nickname sama.
+            // Transisi selesai main: langsung ke leaderboard.
+            // Buka lagi nanti (scan ulang): ke READY, main lagi nickname sama.
             if (window._lastStatus === 'current' || window._lastStatus === 'waiting') {
               window._lastStatus = 'done';
-              show('#join-done');
-              if (!window._doneRedirect) {
-                window._doneRedirect = true;
-                setTimeout(() => { location.href = '/scoreboard'; }, 4000);
-              }
+              location.href = '/scoreboard';
             } else {
               window._lastStatus = 'done';
               showIdle();
@@ -234,15 +223,16 @@
         const msg = $('#queue-msg');
         $('#queue-name').textContent = (localStorage.getItem('ct_user') || '').toUpperCase() || '–';
         if (s.status === 'current') {
-          title.innerHTML = 'YOUR TURN!';
+          // Operator mulai manual: HP tetap di pesan arena (tidak ganti layar)
+          title.innerHTML = `YOU'RE READY!`;
           msg.style.display = '';
-          msg.textContent = `YOU'RE PLAYING`;
-          msg.classList.add('big');
+          msg.classList.remove('big');
+          msg.textContent = 'Please head to the game arena';
           // Popup hanya saat transisi (tadi waiting, sekarang giliranmu) —
-          // buka/refresh halaman langsung diam, cukup tampilkan YOUR TURN.
+          // buka/refresh halaman langsung diam (tetap pesan arena).
           if (window._lastStatus === 'waiting' && !window._selectedPopupShown) {
             window._selectedPopupShown = true;
-            Swal.fire({ icon: 'success', title: 'You have been selected!', text: 'Get ready to play! 🎾', confirmButtonColor: '#0a2a6e' });
+            Swal.fire({ icon: 'success', title: 'Please head to the game arena', showConfirmButton: false, timer: 2500, confirmButtonColor: '#0a2a6e' });
           } else {
             window._selectedPopupShown = true;
           }
@@ -281,9 +271,9 @@
       try {
         const me = await api('/api/profile');
         localStorage.setItem('ct_user', me.username);
-        $('#idle-name').textContent = me.username;
+        $('#join-welcome').innerHTML = `Welcome<br />${String(me.username).toUpperCase()}!`;
         $('#queue-name').textContent = me.username;
-      } catch (_) { }
+      } catch (_) {}
       show('#join-idle');
     }
 
