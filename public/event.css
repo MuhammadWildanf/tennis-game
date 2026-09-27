@@ -1,7 +1,8 @@
 /* ─── Tema event Citi Tennis Challenge (mobile-first, dipakai /, /join, /scoreboard) ─── */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap");
 .ev-body {
-  font-family: "Helvetica Neue", Helvetica, Arial, "Segoe UI", sans-serif;
-  background: #06255e url("assets/image/bg.png") center / cover no-repeat fixed;
+  font-family: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  background: #06255e url("assets/image/background.png") center / cover no-repeat fixed;
 }
 .ev-veil {
   position: fixed;
@@ -9,6 +10,7 @@
   z-index: 0;
   pointer-events: none;
   background: url("assets/image/overlay-bg.png") center / cover no-repeat;
+  opacity: 0.55;
 }
 .ev-footwave {
   position: fixed;
@@ -18,16 +20,17 @@
   z-index: 1;
   pointer-events: none;
   width: 100vw;
-  height: 150px;
+  height: min(40vh, 340px);
   overflow: hidden;
 }
 .ev-footwave img {
   display: block;
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  object-position: right bottom;
+  object-fit: contain;
+  object-position: left bottom;
   max-width: none;
+  transform: translate(-45%, 20%);
 }
 
 .ev-app {
@@ -109,7 +112,7 @@
 
 /* header 1–4 */
 .ev-symposium {
-  font-family: "Helvetica Neue", Helvetica, Arial, "Segoe UI", sans-serif;
+  font-family: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
   text-align: center;
   color: #fff;
   font-size: 19px;
@@ -120,26 +123,71 @@
 }
 .ev-title {
   display: block;
-  width: 100%;
+  width: 108%;
   max-width: none;
   height: auto;
   margin: 0;
 }
 .ev-eyebrow {
-  text-align: center; color: #fff;
-  font-size: 13px; font-weight: 600;
-  letter-spacing: .5em; text-indent: .5em;
-  margin: 0 0 6px;
+  text-align: center;
+  color: #d7f75b;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.32em;
+  text-indent: 0.32em;
+  margin: 0 0 4px;
+}
+/* bola mini ◎ di atas card */
+.ball-mini {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  overflow: hidden;
+  margin: -56px auto 10px;
+  background: rgba(7, 20, 50, 0.5);
+}
+.ball-mini img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+/* tombol pale ala Figma */
+.ev-btn.ev-btn-play {
+  display: block;
+  width: 100%;
+  margin: 14px 0 0;
+  background: #d9e2f2;
+  border: none;
+  color: #0a2a6e;
+}
+/* nama pemain lime ala Figma */
+.player-name-lime {
+  text-align: center;
+  color: #d7f75b;
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  margin: 2px 0 16px;
+  text-transform: uppercase;
+  word-break: break-word;
 }
 .ev-tag {
-  text-align: center; color: #fff;
-  font-size: 12px; font-weight: 600;
-  letter-spacing: .28em; text-indent: .28em;
+  text-align: center;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.28em;
+  text-indent: 0.28em;
   margin: 8px 0 0;
 }
-.ev-tag i { font-style: normal; color: #7cc4ff; padding: 0 .4em; }
+.ev-tag i {
+  font-style: normal;
+  color: #7cc4ff;
+  padding: 0 0.4em;
+}
 .ev-tagline {
-  font-family: "Helvetica Neue", Helvetica, Arial, "Segoe UI", sans-serif;
+  font-family: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
   text-align: center;
   color: #fff;
   font-size: 15px;
@@ -185,33 +233,35 @@
 /* card */
 .ev-card {
   margin-top: 26px;
-  background: linear-gradient(180deg, rgba(18, 72, 150, 0.62) 0%, rgba(84, 170, 245, 0.62) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 30px;
-  padding: 34px 24px 30px;
-  box-shadow: 0 18px 50px rgba(2, 12, 40, 0.45);
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 24px;
+  padding: 30px 24px 26px;
+  box-shadow: 0 18px 50px rgba(2, 12, 40, 0.35);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
 }
 .ev-card h2 {
   text-align: center;
   color: #fff;
   font-weight: 600;
-  font-size: 33px;
-  line-height: 1.12;
+  font-size: 21px;
+  line-height: 1.3;
   letter-spacing: 0.02em;
-  margin-bottom: 20px;
+  margin-bottom: 18px;
 }
 /* pill nama / input */
 .ev-pill {
   width: 100%;
-  border: none;
   outline: none;
-  background: #0a2a6e;
+  background: rgba(10, 42, 110, 0.35);
   color: #fff;
-  border-radius: 999px;
-  padding: 18px 20px;
+  border: 1.5px solid rgba(255, 255, 255, 0.65);
+  border-radius: 16px;
+  padding: 15px 20px;
   font-family: inherit;
   font-weight: 600;
-  font-size: 22px;
+  font-size: 20px;
   letter-spacing: 0.05em;
   text-align: center;
   text-transform: uppercase;
@@ -224,16 +274,17 @@ input.ev-pill.err {
   box-shadow: 0 0 0 3px #e1251b;
 }
 .ev-hint {
-  font-family: "Helvetica Neue", Helvetica, Arial, "Segoe UI", sans-serif;
+  font-family: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
   text-align: center;
-  color: rgba(255, 255, 255, 0.92);
-  font-size: 15px;
-  letter-spacing: 0.04em;
-  margin-top: 12px;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 12px;
+  letter-spacing: 0.03em;
+  margin-top: 10px;
 }
-/* tombol 6 */
+/* tombol utama */
 .ev-btn {
   display: block;
+  position: relative;
   width: 86%;
   margin: 16px auto 0;
   background: #fff;
@@ -253,6 +304,51 @@ input.ev-pill.err {
 .ev-btn:disabled {
   opacity: 0.7;
   cursor: wait;
+}
+/* varian lime ala Figma (submit / aksi utama pemain) */
+.ev-btn.ev-btn-lime {
+  background: #d7f75b;
+  border: none;
+  color: #0a2a6e;
+}
+.ev-btn.ev-btn-lime .btn-arrow {
+  position: absolute;
+  right: 22px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-weight: 800;
+}
+.ev-btn.ev-btn-play .btn-arrow {
+  position: absolute;
+  right: 22px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-weight: 800;
+}
+/* baris check leaderboard ala Figma */
+.lb-check {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 14px;
+}
+.lb-check a {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.lb-check .trophy {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 255, 255, 0.7);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
 }
 .ev-btn .btn-spinner {
   display: none;
@@ -276,7 +372,7 @@ input.ev-pill.err {
   margin-top: 18px;
 }
 .ev-links a {
-  font-family: "Helvetica Neue", Helvetica, Arial, "Segoe UI", sans-serif;
+  font-family: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
   color: #fff;
   font-size: 15px;
   letter-spacing: 0.1em;

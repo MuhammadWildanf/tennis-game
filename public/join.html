@@ -10,7 +10,7 @@
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <style>
     .queue-msg {
-      font-family: 'Helvetica Neue', Helvetica, Arial, 'Segoe UI', sans-serif;
+      font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;
       text-align: center;
       color: #fff;
       font-size: 17px;
@@ -20,7 +20,7 @@
     }
 
     .queue-msg.big {
-      font-family: 'Helvetica Neue', Helvetica, Arial, 'Segoe UI', sans-serif;
+      font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;
       font-size: 30px;
       letter-spacing: .02em;
     }
@@ -38,7 +38,7 @@
       background: none;
       border: none;
       cursor: pointer;
-      font-family: 'Helvetica Neue', Helvetica, Arial, 'Segoe UI', sans-serif;
+      font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;
       color: rgba(255, 255, 255, .85);
       font-size: 14px;
       letter-spacing: .08em;
@@ -49,36 +49,35 @@
 </head>
 
 <body class="ev-body">
-  <div class="ev-veil" aria-hidden="true"></div>
-  <div class="ev-footwave" aria-hidden="true"><img src="assets/image/footer-wave.png" alt="" /></div>
+  <div class="ev-footwave" aria-hidden="true"><img src="assets/image/bola.png" alt="" /></div>
 
   <main class="app ev-app">
     <header>
-      <img class="ev-title" src="assets/image/title.png" alt="Tennis Challenge" />
-      <img class="ev-logo" src="assets/image/logo.png" alt="Citi | Mastercard" />
+      <img class="ev-title" src="assets/image/logo-group.png" alt="Tennis Challenge" />
     </header>
 
-    <!-- State 1: isi alias dulu -->
+    <!-- State 1: isi nickname dulu -->
     <section id="alias-wrap" class="ev-card hidden">
-      <h2>ENTER<br />YOUR NICKNAME</h2>
+      <h2>Enter your nickname</h2>
       <form id="join-alias-form" novalidate>
         <input type="text" class="ev-pill" id="join-alias-input" placeholder="Nickname" maxlength="12"
           autocomplete="off" autocapitalize="characters" spellcheck="false" />
-        <p class="ev-hint">use 2 – 12 characters ( A-Z , 0-9 )</p>
+        <p class="ev-hint">Use 2-12 Characters (A-Z, 0-9)</p>
         <p id="join-alias-error" class="form-error"></p>
-        <button type="submit" class="ev-btn" id="join-ready-btn">
-          <span class="btn-label">SUBMIT</span>
+        <button type="submit" class="ev-btn ev-btn-lime" id="join-ready-btn">
+          <span class="btn-label">Submit <span class="btn-arrow">→</span></span>
           <span class="btn-spinner"></span>
         </button>
       </form>
     </section>
 
-    <!-- State 2: ARE YOU READY + nama + PLAY -->
+    <!-- State 2: ARE YOU READY + nama + back/PLAY -->
     <section id="join-idle" class="ev-card hidden">
-      <h2>ARE YOU<br />READY?</h2>
-      <div class="ev-pill queue-name" id="idle-name">–</div>
-      <button class="ev-btn" id="join-btn" onclick="readyToPlay()">
-        <span class="btn-label">PLAY</span>
+      <div class="ball-mini"><img src="assets/image/bola.png" alt="" /></div>
+      <h2>Are you ready?</h2>
+      <div class="player-name-lime" id="idle-name">–</div>
+      <button class="ev-btn ev-btn-play" id="join-btn" onclick="readyToPlay()">
+        <span class="btn-label">Let's Play <span class="btn-arrow">→</span></span>
         <span class="btn-spinner"></span>
       </button>
     </section>
@@ -154,7 +153,9 @@
         localStorage.setItem('ct_user', data.user.username);
         await showIdle();
       } catch (err) {
-        if (/taken/i.test(err.message || '')) {
+        if (/taken/i.test(err.message || '') && alias === (localStorage.getItem('ct_user') || '')) {
+          await showIdle(); // nama sendiri (habis Back), lanjut seperti biasa
+        } else if (/taken/i.test(err.message || '')) {
           await Swal.fire({ icon: 'error', title: 'Nickname already taken', text: 'Please enter a new nickname', confirmButtonText: 'CLOSE', confirmButtonColor: '#0a2a6e' });
           aliasInput.focus();
         } else {
@@ -278,7 +279,7 @@
         localStorage.setItem('ct_user', me.username);
         $('#idle-name').textContent = me.username;
         $('#queue-name').textContent = me.username;
-      } catch (_) {}
+      } catch (_) { }
       show('#join-idle');
     }
 

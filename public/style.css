@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+
 :root {
   --navy-1: #0a1a3f;
   --navy-2: #0d2350;
@@ -20,7 +22,7 @@
 html, body { min-height: 100%; }
 
 body {
-  font-family: 'Helvetica Neue', Helvetica, Arial, 'Segoe UI', sans-serif;
+  font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;
   color: var(--text);
   background:
     radial-gradient(120% 60% at 50% 0%, #16337a 0%, transparent 60%),

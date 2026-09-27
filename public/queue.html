@@ -10,7 +10,7 @@
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <style>
     .now-label {
-      font-family: 'Helvetica Neue', Helvetica, Arial, 'Segoe UI', sans-serif;
+      font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;
       text-align: center;
       font-size: 13px;
       letter-spacing: .3em;
@@ -29,7 +29,7 @@
     }
 
     .now-sub {
-      font-family: 'Helvetica Neue', Helvetica, Arial, 'Segoe UI', sans-serif;
+      font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;
       text-align: center;
       color: rgba(255, 255, 255, .9);
       font-size: 15px;
@@ -88,7 +88,7 @@
       display: block;
       font-size: 11px;
       color: rgba(0, 0, 0, .5);
-      font-family: 'Helvetica Neue', Helvetica, Arial, 'Segoe UI', sans-serif;
+      font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;
       letter-spacing: .06em;
     }
 
@@ -134,20 +134,18 @@
       font-size: 11px;
       color: rgba(255, 255, 255, .6);
       margin-top: 12px;
-      font-family: 'Helvetica Neue', Helvetica, Arial, 'Segoe UI', sans-serif;
+      font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;
       letter-spacing: .08em;
     }
   </style>
 </head>
 
 <body class="ev-body">
-  <div class="ev-veil" aria-hidden="true"></div>
-  <div class="ev-footwave" aria-hidden="true"><img src="assets/image/footer-wave.png" alt="" /></div>
+  <div class="ev-footwave" aria-hidden="true"><img src="assets/image/bola.png" alt="" /></div>
 
   <main class="app ev-app">
     <header>
-      <img class="ev-title" src="assets/image/title.png" alt="Tennis Challenge" />
-      <img class="ev-logo" src="assets/image/logo.png" alt="Citi | Mastercard" />
+      <img class="ev-title" src="assets/image/logo-group.png" alt="Tennis Challenge" />
     </header>
 
     <div class="ev-cols">
@@ -155,7 +153,7 @@
         <div class="now-label">NOW PLAYING</div>
         <div class="now-name" id="now-name">–</div>
         <div class="now-sub" id="now-sub">–</div>
-        <button class="ev-btn" onclick="skip()">SKIP ⏭</button>
+        <button class="ev-btn ev-btn-lime" onclick="skip()">SKIP ⏭</button>
       </section>
 
       <section class="ev-card">

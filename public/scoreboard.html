@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -7,93 +8,190 @@
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="event.css" />
   <style>
-    section.lb-plain { margin-top: 0 !important; margin-bottom: auto !important; }
-    .ev-card.lb-plain { background: transparent; border: none; box-shadow: none; padding: 0; }
-    .lb-header-img {
-      display: block; width: 100%; max-width: 100%; height: auto;
-      position: relative; z-index: 1;
-      margin-bottom: -26px;
-      filter: drop-shadow(0 6px 12px rgba(0,0,0,.5));
+    /* bola di depan card khusus leaderboard */
+    .ev-footwave {
+      z-index: 1;
     }
-    .lb-sub {
-      display: flex; align-items: center; justify-content: center; gap: 10px;
-      color: #d6e9ff; font-weight: 800; font-size: 12px; letter-spacing: .32em; text-indent: .32em;
-      margin-bottom: 14px;
+
+    /* header kompak khusus leaderboard ala Figma */
+    .ev-title.sb-title-img {
+      width: 88%;
+      margin: 0 auto;
     }
-    .lb-sub::before, .lb-sub::after {
-      content: ''; height: 2px; width: 60px; border-radius: 2px;
-      background: linear-gradient(90deg, transparent, #5eb6ff);
+
+    .ev-logo.sb-logo-img {
+      width: 150px;
     }
-    .lb-sub::after { background: linear-gradient(90deg, #5eb6ff, transparent); }
+
+    section.lb-plain {
+      margin-top: 0 !important;
+      margin-bottom: auto !important;
+    }
+
+    .ev-card.lb-plain {
+      background: transparent;
+      border: none;
+      box-shadow: none;
+      padding: 0;
+    }
+
+    /* bola kanan khusus leaderboard ala Figma */
+    .ev-footwave img {
+      object-position: right bottom;
+      transform: translate(35%, 45%);
+    }
+
+    .lb-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin: 2px 2px 12px;
+    }
+
+    .lb-title-row h2 {
+      color: #fff;
+      font-size: 17px;
+      font-weight: 800;
+      letter-spacing: .12em;
+    }
+
+    .lb-title-row .trophy {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      border: 1.5px solid rgba(255, 255, 255, .7);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+      flex: none;
+    }
+
     .lb-panel {
-      background: linear-gradient(180deg, rgba(8,32,86,.94), rgba(3,14,44,.96));
-      border: 2px solid rgba(63,140,255,.8); border-radius: 22px;
-      padding: 12px 10px;
-      box-shadow: 0 0 36px rgba(70,150,255,.5), inset 0 0 34px rgba(30,90,200,.18);
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      border-radius: 24px;
+      padding: 18px 18px 34px;
+      box-shadow: 0 18px 50px rgba(2, 12, 40, 0.35);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
     }
-    .sb-list { list-style: none; display: flex; flex-direction: column; gap: 5px; padding: 0 2px 0 0; margin: 0; max-height: min(52vh, 560px); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: rgba(120,190,255,.6) transparent; }
-    .sb-list::-webkit-scrollbar { width: 6px; }
-    .sb-list::-webkit-scrollbar-thumb { background: rgba(120,190,255,.6); border-radius: 3px; }
+
+    .lb-back {
+      position: relative;
+      z-index: 2;
+      margin: -26px 0 0 2px;
+    }
+
+    .sb-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      padding: 0 14px 0 0;
+      margin: 0;
+      max-height: min(52vh, 560px);
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      scrollbar-width: thin;
+      scrollbar-color: #d7f75b rgba(255, 255, 255, 0.22);
+    }
+
+    .sb-list::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .sb-list::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.22);
+      border-radius: 4px;
+    }
+
+    .sb-list::-webkit-scrollbar-thumb {
+      background: #d7f75b;
+      border-radius: 4px;
+    }
+
     .sb-row {
       flex: none;
-      display: grid; grid-template-columns: 44px 1fr auto; align-items: center;
-      background: linear-gradient(180deg, #0b3386 0%, #041741 100%);
-      border: 1px solid rgba(31,111,224,.7); border-radius: 12px;
-      clip-path: polygon(0 0, 100% 0, calc(100% - 18px) 100%, 0 100%);
-      padding: 4px 30px 4px 4px; color: #fff;
-      position: relative; overflow: hidden;
+      display: grid;
+      grid-template-columns: 30px 1fr auto;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 2px;
+      color: #fff;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.16);
     }
-    .sb-row::after {
-      content: ''; position: absolute; top: 0; bottom: 0; right: 9%; width: 30px;
-      background: linear-gradient(105deg, transparent, rgba(130,195,255,.16), transparent);
-      transform: skewX(-20deg); pointer-events: none;
+
+    .sb-row .rnk {
+      color: #d7f75b;
+      font-weight: 800;
+      font-size: 16px;
+      text-align: center;
     }
-    .sb-badge {
-      width: 36px; height: 36px; border-radius: 10px;
-      display: flex; align-items: center; justify-content: center;
-      font-weight: 900; font-size: 16px; color: #fff;
-      background: rgba(70,140,230,.28); border: 1px solid rgba(120,190,255,.5);
-    }
-    .sb-row.top1 { border: 2px solid #ffd21f; box-shadow: 0 0 22px rgba(255,210,31,.75), inset 0 0 22px rgba(255,190,40,.2); padding-top: 8px; padding-bottom: 8px; }
-    .sb-row.top1 .sb-badge { background: linear-gradient(180deg, #ffe27a, #f5a623); border-color: #ffedb5; color: #5a3400; font-size: 24px; width: 44px; height: 44px; }
-    .sb-row.top2 .sb-badge { background: linear-gradient(180deg, #f2f5f9, #9aa7b8); border-color: #e2e8f0; color: #33404f; }
-    .sb-row.top3 .sb-badge { background: linear-gradient(180deg, #ffc48a, #c96a1e); border-color: #ffd9ab; color: #4d2400; }
-    .sb-row .rank { display: none; }
+
     .sb-row .name {
-      font-size: 17px; font-weight: 800; letter-spacing: .02em; color: #fff;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 10px;
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
       min-width: 0;
     }
-    .sb-row .score { font-size: 17px; font-weight: 800; color: #ffd75e; padding-left: 10px; white-space: nowrap; }
-    .sb-row .score::after { content: ' PTS'; font-size: 12px; }
-    .sb-row.you { box-shadow: inset 0 0 0 2px #7cc4ff; }
-    .sb-empty { text-align: center; color: #fff; font-size: 15px; padding: 14px 0; }
-    .sb-note { text-align: center; font-size: 11px; color: rgba(255,255,255,.6); margin-top: 12px; letter-spacing: .08em; }
+
+    .sb-row .score {
+      font-size: 16px;
+      font-weight: 800;
+      color: #d7f75b;
+      white-space: nowrap;
+      border-left: 1px solid rgba(255, 255, 255, 0.35);
+      padding-left: 14px;
+    }
+
+    .sb-row.you .name {
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      text-decoration-color: #d7f75b;
+    }
+
+    .sb-empty {
+      text-align: center;
+      color: #fff;
+      font-size: 15px;
+      padding: 14px 0;
+    }
+
     /* List sampai 20: rapat + ramping di layar kecil */
     @media (max-width: 360px) {
-      .lb-header-img { margin-bottom: -20px; }
-      .sb-row { grid-template-columns: 40px 1fr auto; padding: 4px 10px 4px 4px; }
-      .sb-badge { width: 32px; height: 32px; font-size: 15px; border-radius: 8px; }
-      .sb-row .name, .sb-row .score { font-size: 15px; }
+
+      .sb-row .name,
+      .sb-row .score {
+        font-size: 15px;
+      }
     }
   </style>
 </head>
+
 <body class="ev-body">
-  <div class="ev-veil" aria-hidden="true"></div>
-  <div class="ev-footwave" aria-hidden="true"><img src="assets/image/footer-wave.png" alt="" /></div>
+  <div class="ev-footwave" aria-hidden="true"><img src="assets/image/bola.png" alt="" /></div>
 
   <main class="app ev-app">
     <header>
-      <img class="ev-title" src="assets/image/title.png" alt="Tennis Challenge" />
-      <img class="ev-logo" src="assets/image/logo.png" alt="Citi | Mastercard" />
+      <p class="ev-eyebrow">WEALTH SYMPOSIUM</p>
+      <img class="ev-title sb-title-img" src="assets/image/title.png" alt="Tennis Challenge" />
+      <img class="ev-logo sb-logo-img" src="assets/image/logo.png" alt="Citi | Mastercard" />
     </header>
 
     <!-- Halaman 3: leaderboard Top 20 -->
     <section class="ev-card lb-plain">
-      <img class="lb-header-img" src="assets/image/leaderboard.png" alt="Leaderboard" />
       <div class="lb-panel">
-        <div class="lb-sub">TOP 20 PLAYERS</div>
-        <div id="sb-empty" class="sb-empty hidden"><p>No scores yet — be the first on the board!</p></div>
+        <div class="lb-title-row">
+          <h2>TOP 20 LEADERBOARD</h2><span class="trophy">🏆</span>
+        </div>
+        <div id="sb-empty" class="sb-empty hidden">
+          <p>No scores yet — be the first on the board!</p>
+        </div>
         <ul id="sb-list" class="sb-list"></ul>
       </div>
     </section>
@@ -116,21 +214,20 @@
             const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
             const pr = await (await fetch('/api/profile', { headers })).json();
             if (pr && pr.username) rows = [...lb, { rank: null, username: pr.username, display_name: pr.display_name, best_score: pr.best_score || 0 }];
-          } catch (_) {}
+          } catch (_) { }
         }
         $('#sb-empty').classList.toggle('hidden', rows.length > 0);
-        $('#sb-list').innerHTML = rows.map((p) => {
-          const cls = p.rank === 1 ? ' top1' : p.rank === 2 ? ' top2' : p.rank === 3 ? ' top3' : '';
-          const badge = p.rank === 1 ? '🏆' : (p.rank ?? '–');
-          return `<li class="sb-row${cls}${me && p.username === me ? ' you' : ''}">` +
-          `<span class="sb-badge">${badge}</span>` +
+        $('#sb-list').innerHTML = rows.map((p) =>
+          `<li class="sb-row${me && p.username === me ? ' you' : ''}">` +
+          `<span class="rnk">${p.rank ?? '–'}</span>` +
           `<span class="name">${esc(p.display_name || p.username)}</span>` +
-          `<span class="score">${p.best_score}</span></li>`;
-        }).join('');
-      } catch (_) {}
+          `<span class="score">${p.best_score}</span></li>`
+        ).join('');
+      } catch (_) { }
     }
     tick();
     setInterval(() => { if (!document.hidden) tick(); }, 15000);
   </script>
 </body>
+
 </html>
