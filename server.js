@@ -250,13 +250,13 @@ app.get('/api/profile', authMiddleware, (req, res) => {
 app.get('/api/leaderboard', (req, res) => {
   const sortBy = req.query.sort || 'best_score';
   const validSorts = {
-    best_score: 'best_score DESC',
-    total_score: 'total_score DESC',
-    wins: 'wins DESC',
-    win_rate: '(CASE WHEN total_matches > 0 THEN wins * 100.0 / total_matches ELSE 0 END) DESC'
+    best_score: { sql: 'best_score DESC', key: (p) => p.best_score },
+    total_score: { sql: 'total_score DESC', key: (p) => p.total_score },
+    wins: { sql: 'wins DESC', key: (p) => p.wins },
+    win_rate: { sql: '(CASE WHEN total_matches > 0 THEN wins * 100.0 / total_matches ELSE 0 END) DESC', key: (p) => p.win_rate }
   };
 
-  const orderBy = validSorts[sortBy] || validSorts.best_score;
+  const sort = validSorts[sortBy] || validSorts.best_score;
 
   let limit = parseInt(req.query.limit, 10);
   if (!Number.isFinite(limit) || limit < 1) limit = 50;
@@ -275,12 +275,18 @@ app.get('/api/leaderboard', (req, res) => {
       CASE WHEN total_matches > 0 THEN ROUND(wins * 100.0 / total_matches, 1) ELSE 0 END AS win_rate
     FROM users
     WHERE total_matches > 0
-    ORDER BY ${orderBy}
+    ORDER BY ${sort.sql}, total_score DESC, wins DESC, username ASC
     LIMIT ?
   `).all(limit);
 
-  // Tambah rank agar gampang dirender Unity (# + nama + skor)
-  res.json(leaders.map((p, i) => ({ rank: i + 1, ...p })));
+  // Rank kompetisi: skor sama = rank sama (1,1,3), bukan 1,2,3
+  let rank = 0;
+  let prevKey = Symbol('none');
+  res.json(leaders.map((p, i) => {
+    const k = sort.key(p);
+    if (k !== prevKey) { rank = i + 1; prevKey = k; }
+    return { rank, ...p };
+  }));
 });
 
 // "Around me" window for the Friends tab: your rank + closest players
@@ -289,7 +295,7 @@ app.get('/api/leaderboard/around', authMiddleware, (req, res) => {
     SELECT id, username, display_name, total_matches, wins, losses, best_score
     FROM users
     WHERE total_matches > 0
-    ORDER BY best_score DESC
+    ORDER BY best_score DESC, total_score DESC, wins DESC, username ASC
   `).all();
 
   const idx = all.findIndex((p) => p.id === req.user.id);
@@ -297,10 +303,19 @@ app.get('/api/leaderboard/around', authMiddleware, (req, res) => {
     return res.json({ rank: null, total: all.length, players: [] });
   }
 
-  const start = Math.max(0, Math.min(idx - 4, all.length - 9));
-  const slice = all.slice(start, start + 9).map((p, i) => ({ ...p, rank: start + i + 1 }));
+  const compRank = (i) => {
+    let r = 1;
+    for (let k = 0; k < i; k++) if (all[k].best_score !== all[i].best_score) r = k + 2 > r ? k + 2 : r;
+    // rank kompetisi: 1 + yang skornya strictly lebih besar
+    let better = 0;
+    for (let k = 0; k < all.length && all[k].best_score > all[i].best_score; k++) better++;
+    return better + 1;
+  };
 
-  res.json({ rank: idx + 1, total: all.length, players: slice });
+  const start = Math.max(0, Math.min(idx - 4, all.length - 9));
+  const slice = all.slice(start, start + 9).map((p, i) => ({ ...p, rank: compRank(start + i) }));
+
+  res.json({ rank: compRank(idx), total: all.length, players: slice });
 });
 
 // Submit score — Unity calls this when the game ends (turn token burned).

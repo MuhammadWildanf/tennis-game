@@ -10,7 +10,7 @@
   <style>
     /* bola di depan card khusus leaderboard */
     .ev-footwave {
-      z-index: 1;
+      z-index: 3;
     }
 
     /* header kompak khusus leaderboard ala Figma */
@@ -23,9 +23,22 @@
       width: 150px;
     }
 
+    /* halaman fix tanpa scroll: scroll hanya di dalam card */
+    .ev-app {
+      height: 100vh;
+      height: 100svh;
+      max-height: 100vh;
+      max-height: 100svh;
+      overflow: hidden;
+    }
+
     section.lb-plain {
       margin-top: 0 !important;
       margin-bottom: auto !important;
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
     }
 
     .ev-card.lb-plain {
@@ -76,6 +89,11 @@
       box-shadow: 0 18px 50px rgba(2, 12, 40, 0.35);
       backdrop-filter: blur(14px);
       -webkit-backdrop-filter: blur(14px);
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
     }
 
     .lb-back {
@@ -90,7 +108,8 @@
       flex-direction: column;
       padding: 0 14px 0 0;
       margin: 0;
-      max-height: min(52vh, 560px);
+      flex: 1;
+      min-height: 0;
       overflow-y: auto;
       overscroll-behavior: contain;
       scrollbar-width: thin;
@@ -117,6 +136,7 @@
       grid-template-columns: 30px 1fr auto;
       align-items: center;
       gap: 10px;
+      min-height: 44px;
       padding: 9px 2px;
       color: #fff;
       border-bottom: 1px solid rgba(255, 255, 255, 0.16);
@@ -149,10 +169,41 @@
       padding-left: 14px;
     }
 
-    .sb-row.you .name {
-      text-decoration: underline;
-      text-underline-offset: 3px;
-      text-decoration-color: #d7f75b;
+    .sb-row.you {
+      background: #F2F6FF;
+      border: none;
+      clip-path: none;
+      border-radius: 14px;
+    }
+
+    .sb-row.you .rnk,
+    .sb-row.you .name,
+    .sb-row.you .score {
+      color: #053469;
+      font-weight: 900;
+    }
+
+    .sb-row.you .score {
+      border-left-color: rgba(5, 52, 105, 0.3);
+    }
+
+    .sb-row.top1 {
+      background: #d7f75b;
+      border: none;
+      clip-path: none;
+      border-radius: 14px;
+      box-shadow: 0 4px 18px rgba(215, 247, 91, 0.35);
+    }
+
+    .sb-row.top1 .rnk,
+    .sb-row.top1 .name,
+    .sb-row.top1 .score {
+      color: #053469;
+      font-weight: 900;
+    }
+
+    .sb-row.top1 .score {
+      border-left-color: rgba(5, 52, 105, 0.35);
     }
 
     .sb-empty {
@@ -218,7 +269,7 @@
         }
         $('#sb-empty').classList.toggle('hidden', rows.length > 0);
         $('#sb-list').innerHTML = rows.map((p) =>
-          `<li class="sb-row${me && p.username === me ? ' you' : ''}">` +
+          `<li class="sb-row${p.rank === 1 ? ' top1' : ''}${me && p.username === me ? ' you' : ''}">` +
           `<span class="rnk">${p.rank ?? '–'}</span>` +
           `<span class="name">${esc(p.display_name || p.username)}</span>` +
           `<span class="score">${p.best_score}</span></li>`

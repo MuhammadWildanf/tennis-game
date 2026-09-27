@@ -1,5 +1,5 @@
 /* ─── Tema event Citi Tennis Challenge (mobile-first, dipakai /, /join, /scoreboard) ─── */
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap");
 .ev-body {
   font-family: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
   background: #06255e url("assets/image/background.png") center / cover no-repeat fixed;
@@ -17,7 +17,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 1;
+  z-index: 3;
   pointer-events: none;
   width: 100vw;
   height: min(40vh, 340px);
@@ -144,7 +144,7 @@
   border-radius: 50%;
   border: 2px solid rgba(255, 255, 255, 0.5);
   overflow: hidden;
-  margin: -56px auto 10px;
+  margin: -64px auto 14px;
   background: rgba(7, 20, 50, 0.5);
 }
 .ball-mini img {
