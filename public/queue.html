@@ -196,7 +196,7 @@
         const s = await api('/api/queue/state');
         if (s.current) {
           $('#now-name').textContent = s.current.display_name || s.current.username;
-          $('#now-sub').textContent = 'Playing… 🎾';
+          $('#now-sub').textContent = 'Playing…';
         } else {
           $('#now-name').textContent = '–';
           $('#now-sub').textContent = s.total_waiting ? 'Tap ▶ on a player to start' : 'No players yet';
@@ -223,7 +223,7 @@
     async function pick(username, force) {
       try {
         const r = await api('/api/queue/pick', { method: 'POST', body: JSON.stringify({ username, force: !!force }) });
-        toast(`${r.current.user.username} is playing! 🎾`);
+        toast(`${r.current.user.username} is playing!`);
       } catch (e) {
         if (e.data && e.data.need_force) {
           const r = await Swal.fire({ icon: 'warning', title: 'Force switch?', text: e.message, showCancelButton: true, confirmButtonColor: '#0a2a6e', confirmButtonText: 'Force switch' });

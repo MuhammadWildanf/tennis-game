@@ -14,6 +14,9 @@ const PORT = process.env.PORT || 2000;
 app.set('trust proxy', true);
 
 app.use(express.json());
+// Halaman usher: /controll (alias). /queue lama tetap redirect ke sana.
+app.get('/queue', (req, res) => res.redirect(301, '/controll'));
+app.get('/controll', (req, res) => res.sendFile(path.join(__dirname, 'public', 'queue.html')));
 app.use(express.static(path.join(__dirname, 'public'), { extensions: ['html'] }));
 
 // ─── Database Setup ──────────────────────────────────────────────────────────
