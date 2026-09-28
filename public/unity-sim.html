@@ -128,7 +128,7 @@
         <div class="qr-box">
           <img src="/qr/join.png" alt="Join QR" />
           <p class="link-sub">QR ini = yang tampil di layar game.<br />Scan pakai HP untuk join. Usher pick dari <a
-              href="/controll">/controll</a>.</p>
+              href="/control">/control</a>.</p>
           <div class="kv">
             <span>Current</span><b id="sim-current">–</b>
             <span>Waiting</span><b id="sim-waiting">0</b>
@@ -214,7 +214,7 @@
     }
 
     async function simFinish() {
-      if (!turnToken) { log('tidak ada giliran aktif — usher pick dulu di /controll', 'err'); return; }
+      if (!turnToken) { log('tidak ada giliran aktif — usher pick dulu di /control', 'err'); return; }
       const score = 100 + Math.floor(Math.random() * 400);
       const result = Math.random() > 0.4 ? 'win' : 'loss';
       try {

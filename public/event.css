@@ -151,6 +151,17 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+  animation: ball-spin 8s linear infinite;
+}
+@keyframes ball-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ball-mini img {
+    animation: none;
+  }
 }
 /* tombol pale ala Figma */
 .ev-btn.ev-btn-play {
