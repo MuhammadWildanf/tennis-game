@@ -143,6 +143,32 @@
       color: #0a2a6e;
       margin-right: 16px;
     }
+
+    ol.steps {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 12px 14px 12px 34px;
+      font-size: 14px;
+      margin-bottom: 8px;
+    }
+
+    ol.steps li {
+      margin-bottom: 6px;
+    }
+
+    pre.cs {
+      background: #0e1526;
+      color: #d6e4ff;
+      border-radius: 8px;
+      padding: 14px 16px;
+      font-size: 12px;
+      overflow-x: auto;
+      white-space: pre;
+      border: 1px solid #ddd;
+      font-family: Consolas, monospace;
+      margin-top: 8px;
+    }
   </style>
 </head>
 
@@ -152,6 +178,259 @@
     <p class="ver" id="doc-ver"></p>
     <p class="flow" id="doc-flow"></p>
     <div id="doc-groups"></div>
+
+    <h2>Panduan Unity — 1 file .cs + cara pakai (lengkap)</h2>
+    <p class="flow">Untuk dev Unity: cukup <b>1 file</b> di bawah ini, copy utuh jadi <code class="p">Assets/Scripts/TennisUnityClient.cs</code> — tidak perlu file lain. Yang baru dari versi sebelumnya: script membaca <code class="p">display_mode</code> dari <code class="p">GET /api/queue/state</code>. Kalau admin klik 🏆 di /admin, Unity otomatis tampil panel leaderboard fullscreen + tidak claim/start game (tombol READY semua HP sudah dikunci server, jadi klik READY tidak memunculkan nama).</p>
+    <ol class="steps">
+      <li><b>Copy 1 blok kode</b> di bawah utuh (dari <code class="p">using</code> sampai kurung tutup terakhir) → simpan sebagai <code class="p">Assets/Scripts/TennisUnityClient.cs</code>.</li>
+      <li><b>Buat 1 GameObject</b> di Hierarchy (mis. "TennisClient") → drag script ini ke situ.</li>
+      <li><b>Isi Base Url</b> dengan IP LAN PC server (lihat log <code class="p">npm start</code>, mis. <code class="p">http://192.168.88.32:2000</code>). JANGAN pakai localhost.</li>
+      <li><b>Siapkan 3 panel</b> di scene: Home (idle: QR + Now Playing), Game (gameplay), Leaderboard (fullscreen + 1 Text untuk isi LB). Drag masing-masing ke slot Home Panel / Game Panel / Leaderboard Panel. Slot Text boleh dikosongkan (null = dilewati).</li>
+      <li><b>Tekan Play.</b> Tes normal: HP scan QR → nickname → READY → usher pick ▶ di <code class="p">/control</code> → Unity langsung main + tampil nama.</li>
+      <li><b>Tes leaderboard:</b> admin klik 🏆 Show LB on Unity → dalam ±2 detik Unity tampil panel LB. HP coba READY → terkunci + pesan tunggu. Admin klik Back to Game → normal lagi.</li>
+      <li><b>Sambungkan gameplay:</b> saat match selesai panggil <code class="p">tennisClient.SubmitScore(skor, "win")</code> atau <code class="p">"loss"</code> (referensi via drag di Inspector atau <code class="p">FindObjectOfType(typeof(TennisUnityClient))</code>). JANGAN panggil <code class="p">/api/queue/next</code> atau <code class="p">/api/queue/pick</code> dari Unity — itu kerjaan halaman usher. Aturan 401: kalau submit dapat 401 artinya skor sudah masuk, JANGAN resubmit.</li>
+    </ol>
+    <pre class="cs">// TennisUnityClient.cs — 1 FILE SAJA. Copy utuh, drag ke 1 GameObject.
+// Alur: idle (QR) -&gt; usher pick di /control -&gt; claim -&gt; LANGSUNG main -&gt; SubmitScore.
+// Admin klik Show LB on Unity -&gt; panel LB fullscreen + READY dikunci (nama baru tidak muncul).
+using System.Collections;
+using System.Text;
+using UnityEngine;
+using UnityEngine.Networking;
+using UnityEngine.UI;
+
+public class TennisUnityClient : MonoBehaviour
+{
+    [Header("1. ISI DULU: IP LAN PC server (log npm start). JANGAN localhost.")]
+    public string baseUrl = "http://192.168.88.32:2000";
+
+    [Header("2. DRAG DARI HIERARCHY")]
+    public GameObject homePanel;         // layar idle: QR + Now Playing
+    public GameObject gamePanel;         // layar gameplay
+    public GameObject leaderboardPanel;  // layar LB fullscreen (muncul saat admin klik Show LB)
+    public RawImage qrImage;             // gambar QR di homePanel (boleh null)
+    public Text nowPlayingText;          // teks "Now Playing: X" (boleh null)
+    public Text leaderboardText;         // teks isi LB (boleh null)
+    public Text statusText;              // teks status kecil (boleh null)
+
+    string rememberedUsername = null;
+    string turnToken = null;
+    bool isPlaying = false;
+    bool lbMode = false;
+    float lbRefreshAt = 0f;
+
+    string BASE { get { return baseUrl.TrimEnd('/'); } }
+
+    // Model JSON (sesuai server.js)
+    [System.Serializable] class StatusRes { public bool ok; public string version; }
+    [System.Serializable] class CurrentP { public string username; public string display_name; public int best_score; public int ready; }
+    [System.Serializable] class WaitingP { public int position; public string username; public string display_name; }
+    [System.Serializable] class QueueState { public CurrentP current; public WaitingP[] waiting; public int total_waiting; public string display_mode; }
+    [System.Serializable] class UserInfo { public string id; public string username; public string display_name; }
+    [System.Serializable] class ClaimRes { public string token; public UserInfo user; }
+    [System.Serializable] class LbEntry { public int rank; public string username; public string display_name; public int best_score; public int wins; public int losses; }
+    [System.Serializable] class LbWrap { public LbEntry[] items; }
+
+    void Start()
+    {
+        ShowPanel(homePanel);
+        StartCoroutine(Boot());
+    }
+
+    IEnumerator Boot()
+    {
+        SetStatus("Menghubungi server...");
+        using (UnityWebRequest r = UnityWebRequest.Get(BASE + "/api/status"))
+        {
+            r.timeout = 5;
+            yield return r.SendWebRequest();
+            if (r.result != UnityWebRequest.Result.Success)
+            {
+                SetStatus("Server offline - cek Base Url dan WiFi");
+                yield break;
+            }
+        }
+        SetStatus("Server OK");
+        ShowPanel(homePanel);
+        yield return StartCoroutine(LoadQR());
+        StartCoroutine(PollLoop());
+    }
+
+    // Loop utama tiap 2 detik: baca display_mode + siapa yang di-pick usher
+    IEnumerator PollLoop()
+    {
+        while (true)
+        {
+            using (UnityWebRequest r = UnityWebRequest.Get(BASE + "/api/queue/state"))
+            {
+                r.timeout = 5;
+                yield return r.SendWebRequest();
+                if (r.result == UnityWebRequest.Result.Success)
+                {
+                    QueueState s = JsonUtility.FromJson&lt;QueueState&gt;(r.downloadHandler.text);
+                    bool wantLB = (s.display_mode == "leaderboard");
+                    SetLBMode(wantLB);
+                    if (wantLB)
+                    {
+                        yield return StartCoroutine(RefreshLB());
+                    }
+                    else
+                    {
+                        UpdateHome(s);
+                        if (isPlaying == false)
+                        {
+                            if (s.current != null)
+                            {
+                                if (s.current.username != rememberedUsername)
+                                {
+                                    yield return StartCoroutine(ClaimAndStart());
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            yield return new WaitForSeconds(2f);
+        }
+    }
+
+    // Current baru muncul -&gt; ambil token (OVERWRITE token lama) -&gt; LANGSUNG main
+    IEnumerator ClaimAndStart()
+    {
+        using (UnityWebRequest r = new UnityWebRequest(BASE + "/api/queue/claim-turn", "POST"))
+        {
+            r.downloadHandler = new DownloadHandlerBuffer();
+            r.timeout = 5;
+            yield return r.SendWebRequest();
+            if (r.result != UnityWebRequest.Result.Success) { yield break; }
+            ClaimRes c = JsonUtility.FromJson&lt;ClaimRes&gt;(r.downloadHandler.text);
+            turnToken = c.token;
+            rememberedUsername = c.user.username;
+            PlayerPrefs.SetString("turn_token", turnToken);
+            PlayerPrefs.SetString("remembered_username", rememberedUsername);
+            PlayerPrefs.Save();
+            StartGame(rememberedUsername);
+        }
+    }
+
+    void StartGame(string username)
+    {
+        isPlaying = true;
+        ShowPanel(gamePanel);
+        SetStatus("Now playing: " + username);
+        // TODO: panggil gameplay asli di sini, mis. tennisMatch.StartMatch(username);
+    }
+
+    // PANGGIL INI dari script gameplay saat match selesai. result = "win" atau "loss".
+    public void SubmitScore(int score, string result)
+    {
+        StartCoroutine(SubmitScoreRoutine(score, result));
+    }
+
+    IEnumerator SubmitScoreRoutine(int score, string result)
+    {
+        if (turnToken == null) { isPlaying = false; ShowPanel(homePanel); yield break; }
+        string body = "{\"score\":" + score + ",\"result\":\"" + result + "\",\"opponent\":\"AI\"}";
+        byte[] raw = Encoding.UTF8.GetBytes(body);
+        using (UnityWebRequest r = new UnityWebRequest(BASE + "/api/score", "POST"))
+        {
+            r.uploadHandler = new UploadHandlerRaw(raw);
+            r.downloadHandler = new DownloadHandlerBuffer();
+            r.timeout = 5;
+            r.SetRequestHeader("Content-Type", "application/json");
+            r.SetRequestHeader("Authorization", "Bearer " + turnToken);
+            yield return r.SendWebRequest();
+            // 401 = token hangus = skor kemungkinan SUDAH masuk -&gt; JANGAN resubmit.
+        }
+        turnToken = null;
+        rememberedUsername = null;
+        PlayerPrefs.DeleteKey("turn_token");
+        PlayerPrefs.DeleteKey("remembered_username");
+        isPlaying = false;
+        ShowPanel(homePanel);
+    }
+
+    // Isi panel LB (refresh 15 detik selama mode leaderboard)
+    IEnumerator RefreshLB()
+    {
+        if (lbRefreshAt > Time.time) { yield break; }
+        lbRefreshAt = Time.time + 15f;
+        using (UnityWebRequest r = UnityWebRequest.Get(BASE + "/api/leaderboard?sort=best_score&amp;limit=10"))
+        {
+            r.timeout = 5;
+            yield return r.SendWebRequest();
+            if (r.result != UnityWebRequest.Result.Success) { yield break; }
+            string wrapped = "{\"items\":" + r.downloadHandler.text + "}";
+            LbWrap w = JsonUtility.FromJson&lt;LbWrap&gt;(wrapped);
+            if (leaderboardText != null)
+            {
+                if (w.items == null) { leaderboardText.text = "No scores yet"; }
+                else
+                {
+                    StringBuilder sb = new StringBuilder();
+                    foreach (LbEntry e in w.items)
+                    {
+                        sb.AppendLine("#" + e.rank + " " + e.username + "  " + e.best_score);
+                    }
+                    leaderboardText.text = sb.ToString();
+                }
+            }
+        }
+    }
+
+    IEnumerator LoadQR()
+    {
+        if (qrImage == null) { yield break; }
+        using (UnityWebRequest r = UnityWebRequestTexture.GetTexture(BASE + "/qr/join.png"))
+        {
+            r.timeout = 5;
+            yield return r.SendWebRequest();
+            if (r.result == UnityWebRequest.Result.Success)
+            {
+                qrImage.texture = DownloadHandlerTexture.GetContent(r);
+            }
+        }
+    }
+
+    void SetLBMode(bool on)
+    {
+        if (lbMode == on) { return; }
+        lbMode = on;
+        if (on)
+        {
+            ShowPanel(leaderboardPanel);
+            lbRefreshAt = 0f;
+            SetStatus("Leaderboard (admin) - READY dikunci");
+        }
+        else
+        {
+            if (isPlaying) { ShowPanel(gamePanel); }
+            else { ShowPanel(homePanel); }
+            SetStatus("Game mode");
+        }
+    }
+
+    void UpdateHome(QueueState s)
+    {
+        if (nowPlayingText != null)
+        {
+            if (s.current == null) { nowPlayingText.text = "Ready to Play - Scan QR"; }
+            else { nowPlayingText.text = "Now Playing: " + s.current.display_name; }
+        }
+    }
+
+    void ShowPanel(GameObject p)
+    {
+        if (homePanel != null) { homePanel.SetActive(p == homePanel); }
+        if (gamePanel != null) { gamePanel.SetActive(p == gamePanel); }
+        if (leaderboardPanel != null) { leaderboardPanel.SetActive(p == leaderboardPanel); }
+    }
+
+    void SetStatus(string msg)
+    {
+        if (statusText != null) { statusText.text = msg; }
+    }
+}</pre>
   </main>
 
   <script>
