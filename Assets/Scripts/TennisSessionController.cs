@@ -16,10 +16,12 @@ public class TennisSessionController : MonoBehaviour
     [Header("Polling")]
     public float statePollInterval = 2f;
     public float leaderboardRefreshInterval = 15f;
+    public float displayModePollInterval = 2f;
 
     [Header("UI - Home (optional, bisa null)")]
     public GameObject homePanel;
     public GameObject gamePanel;
+    public GameObject leaderboardPanel; // drag panel LB fullscreen ke sini
     public RawImage qrImage;
     public Text statusText;
     public Text nowPlayingText;
@@ -30,6 +32,7 @@ public class TennisSessionController : MonoBehaviour
     string rememberedUsername = null;
     string turnToken = null;
     bool isPlaying = false;
+    bool leaderboardMode = false; // true = admin force LB, READY dikunci server-side
     Coroutine pollRoutine;
 
     const string PREF_TURN_TOKEN = "turn_token";
@@ -70,6 +73,7 @@ public class TennisSessionController : MonoBehaviour
         RefreshQR();
         pollRoutine = StartCoroutine(PollLoop());
         StartCoroutine(LeaderboardLoop());
+        StartCoroutine(DisplayModeLoop());
     }
 
     // Polling utama: tiap 2 detik cek siapa yang di-pick usher
@@ -88,9 +92,18 @@ public class TennisSessionController : MonoBehaviour
 
             if (state != null)
             {
+                // Admin bisa force leaderboard via /admin — ikut display_mode dari state juga
+                if (!string.IsNullOrEmpty(state.display_mode))
+                    SetLeaderboardMode(state.display_mode == "leaderboard");
+
                 UpdateHomeUI(state);
 
-                if (state.current == null)
+                if (leaderboardMode)
+                {
+                    // LB tampil fullscreen: jangan claim/start game baru.
+                    // READY sudah dikunci server-side (join -> 409), jadi tidak ada current baru.
+                }
+                else if (state.current == null)
                 {
                     // Idle: tunggu usher pick
                 }
@@ -195,6 +208,43 @@ public class TennisSessionController : MonoBehaviour
 
     // ── Leaderboard & QR ───────────────────────────────────────
 
+    // Polling mode layar dari admin: "game" normal, "leaderboard" = LB fullscreen + READY dikunci.
+    // Klik READY di HP tidak akan memunculkan nama di Unity karena server tolak join saat mode LB.
+    IEnumerator DisplayModeLoop()
+    {
+        while (true)
+        {
+            bool done = false;
+            api.GetDisplayMode(
+                res => { SetLeaderboardMode(res != null && res.mode == "leaderboard"); done = true; },
+                e => { Debug.LogWarning("[DisplayMode] " + e); done = true; });
+            yield return new WaitUntil(() => done);
+            yield return new WaitForSeconds(displayModePollInterval);
+        }
+    }
+
+    void SetLeaderboardMode(bool on)
+    {
+        if (leaderboardMode == on) return;
+        leaderboardMode = on;
+        if (on)
+        {
+            // Paksa tampil LB, sembunyikan home/game. Jangan start game walau ada current sisa.
+            if (homePanel != null) homePanel.SetActive(false);
+            if (gamePanel != null) gamePanel.SetActive(false);
+            if (leaderboardPanel != null) leaderboardPanel.SetActive(true);
+            SetStatus("Leaderboard mode (admin) — READY locked");
+            Debug.Log("[Display] Admin -> LEADERBOARD fullscreen, READY dikunci");
+        }
+        else
+        {
+            if (leaderboardPanel != null) leaderboardPanel.SetActive(false);
+            if (!isPlaying) ShowHome(true);
+            SetStatus("Game mode");
+            Debug.Log("[Display] Admin -> GAME kembali normal");
+        }
+    }
+
     IEnumerator LeaderboardLoop()
     {
         while (true)
@@ -250,6 +300,12 @@ public class TennisSessionController : MonoBehaviour
 
     void ShowHome(bool show)
     {
+        if (leaderboardMode)
+        {
+            if (homePanel != null) homePanel.SetActive(false);
+            if (gamePanel != null) gamePanel.SetActive(false);
+            return;
+        }
         if (homePanel != null) homePanel.SetActive(show);
         if (gamePanel != null) gamePanel.SetActive(!show);
     }

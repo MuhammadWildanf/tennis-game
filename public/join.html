@@ -177,6 +177,20 @@
 
     // Flowchart: READY -> cek status game dulu. Sibuk = catatan try-later
     // di halaman (tidak masuk antrian). Idle = join + pesan arena di halaman.
+    // + MODE LEADERBOARD (dari admin): READY dikunci total, Unity tampil LB.
+    async function getDisplayMode(){try{const r=await fetch('/api/display/mode');const d=await r.json();return d.mode||'game';}catch(_){return 'game';}}
+    async function refreshReadyLock(){
+      const btn=$('#join-btn');if(!btn)return;
+      const mode=await getDisplayMode();
+      if(mode==='leaderboard'){
+        btn.disabled=true;btn.style.opacity='.45';btn.style.filter='grayscale(1)';
+        idleNote('🏆 Leaderboard is showing on the big screen — please wait…');
+        return true;
+      }else{
+        if(!btn.querySelector('.btn-spinner')||btn.querySelector('.btn-spinner').style.display!=='inline-block'){btn.disabled=false;btn.style.opacity='';btn.style.filter='';}
+        return false;
+      }
+    }
     function idleNote(t) {
       const el = $('#idle-note');
       if (!el) return;
@@ -188,14 +202,25 @@
       loading(btn, true);
       idleNote('');
       const busyNote = 'Another player is playing. Please try again later!';
+      const lbNote = '🏆 Leaderboard is showing on the big screen — please wait…';
       try {
+        // 1. Admin force leaderboard di Unity? -> kunci total, jangan tampilkan nama di Unity
+        const mode = await getDisplayMode();
+        if (mode === 'leaderboard') { idleNote(lbNote); return; }
         const st = await api('/api/queue/state');
+        if (st.display_mode === 'leaderboard') { idleNote(lbNote); return; }
         if (st.current || st.total_waiting > 0) {
           idleNote(busyNote);
           return;
         }
-        await api('/api/queue/join', { method: 'POST' });
+        try {
+          await api('/api/queue/join', { method: 'POST' });
+        } catch (je) {
+          if (/leaderboard/i.test(je.message || '')) { idleNote(lbNote); return; }
+          throw je;
+        }
         const r = await api('/api/queue/compete', { method: 'POST' });
+        if (r.reason === 'leaderboard') { idleNote(lbNote); return; }
         if (r.reason === 'playing') {
           try { await api('/api/queue/leave', { method: 'POST' }); } catch (_) { }
           idleNote(busyNote);
@@ -254,9 +279,11 @@
         $('#queue-name').textContent = me.username;
       } catch (_) {}
       show('#join-idle');
+      refreshReadyLock();
     }
 
     (async function boot() {
+      setInterval(async () => { if (!$('#join-idle').classList.contains('hidden')) await refreshReadyLock(); }, 3000);
       if (!authToken) { show('#alias-wrap'); return; }
       try {
         const s = await api('/api/queue/my-status');

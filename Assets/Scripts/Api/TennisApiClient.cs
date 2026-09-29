@@ -39,6 +39,13 @@ public class TennisApiClient : MonoBehaviour
         => StartCoroutine(GetJson("/api/queue/state", onSuccess, onError));
 
     /// <summary>
+    /// Mode layar dari admin: "game" (normal) atau "leaderboard" (fullscreen LB + READY dikunci).
+    /// Poll tiap 2-3 detik, atau baca state.display_mode sekalian.
+    /// </summary>
+    public Coroutine GetDisplayMode(Action<DisplayModeResponse> onSuccess, Action<string> onError)
+        => StartCoroutine(GetJson("/api/display/mode", onSuccess, onError));
+
+    /// <summary>
     /// Ambil token giliran. Idempotent: panggil tiap ada current baru, overwrite token lama.
     /// 404 = belum ada yang main, 409 = turn sudah selesai (skor sudah masuk).
     /// </summary>

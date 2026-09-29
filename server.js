@@ -414,11 +414,12 @@ app.get('/api/unity/info', (req, res) => {
     unity_uses_only_these: [
       'GET /api/status (boot check)',
       'GET /qr/join.png (display QR, via LAN IP/domain)',
-      'GET /api/queue/state every 2s (who is playing + waiting)',
+      'GET /api/queue/state every 2s (who is playing + waiting + display_mode)',
+      'GET /api/display/mode every 2-3s (game|leaderboard — admin forces Unity screen)',
       'POST /api/queue/claim-turn (take current turn token when new current appears; idempotent; save PlayerPrefs)',
       'GET /api/profile (optional: verify token, best score)',
       'POST /api/score (end of game; burns token)',
-      'GET /api/leaderboard?sort=best_score&limit=10 (display, refresh 15-30s)'
+      'GET /api/leaderboard?sort=best_score&limit=10 (display, refresh 15-30s, fullscreen when display_mode=leaderboard)'
     ],
     unity_never_calls: 'POST /api/queue/next, POST /api/queue/pick (staff page does that)',
     queue: {
@@ -429,7 +430,8 @@ app.get('/api/unity/info', (req, res) => {
       no_wait_to_scan: 'players NEVER wait to scan. Scan anytime (even mid-game) -> join line -> usher picks via /queue.',
       usher_only: 'USHER-ONLY: player does NOT press START. pick/next sets ready=1 instantly. Unity starts the game as soon as a new current appears + claim-turn succeeds.',
       usher_mode_staff_picks: 'staff page {BASE}/queue: POST /api/queue/pick {username, force?} -> picks ANY waiting player (free order). Blocked 409 with need_force when someone is playing unless force:true. With staff pick, Unity does NOT call next() — just polls state. Skip button = POST /api/queue/next (FIFO).',
-      unity_poll_state: 'GET /api/queue/state every 2s -> {current:{username, ready, turn_started_at}|null, waiting:[{username, position}], total_waiting}',
+      unity_poll_state: 'GET /api/queue/state every 2s -> {current:{username, ready, turn_started_at}|null, waiting:[{username, position}], total_waiting, display_mode:"game"|"leaderboard"}',
+      unity_leaderboard_mode: 'ADMIN forces Unity screen: POST /api/admin/display-mode {mode:"leaderboard"|"game"}. Unity polls GET /api/display/mode (or reads display_mode in state): leaderboard = show LB fullscreen + DO NOT claim/start new game (READY is locked server-side: join->409 reason=leaderboard). game = back to normal QR/now-playing loop.',
       unity_auto_rule: 'every 2s: state=GET /api/queue/state; if new current appears -> POST /api/queue/claim-turn (save token, OVERWRITE old one); then START GAME IMMEDIATELY. After POST /api/score -> back to polling (usher picks next). No next() in usher mode.',
       unity_next: 'POST /api/queue/next = SKIP/FIFO fallback (staff Skip button). Usher-driven flow does NOT use next() from Unity: staff picks via /api/queue/pick, Unity claims via /api/queue/claim-turn.',
       unity_loop_usher: 'poll state 2s -> new current? claim-turn (save token, overwrite PlayerPrefs) -> START GAME IMMEDIATELY -> POST score -> back to polling (usher picks next). No HP START button. Unity never calls next/pick.',
@@ -444,6 +446,27 @@ app.get('/api/unity/info', (req, res) => {
       profile: 'GET /api/profile (Bearer <token>)'
     }
   });
+});
+
+// ─── Unity display mode (controlled from Admin) ─────────────────────────────
+// 'game' = normal (Unity shows QR / now-playing + player name on READY).
+// 'leaderboard' = admin forces Unity to show LEADERBOARD fullscreen +
+//                 all HP READY buttons are locked (no new current can appear).
+let unityDisplayMode = 'game';
+
+// Public (Unity + HP poll this): which screen should Unity show?
+app.get('/api/display/mode', (req, res) => {
+  res.json({ mode: unityDisplayMode });
+});
+
+// Admin: switch Unity screen. Called by the Leaderboard button in /admin.
+app.post('/api/admin/display-mode', (req, res) => {
+  const { mode } = req.body || {};
+  if (!['game', 'leaderboard'].includes(mode)) {
+    return res.status(400).json({ error: 'mode must be "game" or "leaderboard"' });
+  }
+  unityDisplayMode = mode;
+  res.json({ success: true, mode: unityDisplayMode });
 });
 
 // ─── Queue (turn-taking for ONE Unity station) ───────────────────────────────
@@ -474,6 +497,10 @@ function queuePosition(userId) {
 // Mobile: join the queue (idempotent — same user gets existing spot back;
 // finished players rejoin at the back of the line)
 app.post('/api/queue/join', authMiddleware, (req, res) => {
+  // Leaderboard mode: lock READY for everyone (admin is showing LB on Unity)
+  if (unityDisplayMode === 'leaderboard') {
+    return res.status(409).json({ error: 'Leaderboard is showing — please wait', reason: 'leaderboard' });
+  }
   const ex = db.prepare('SELECT * FROM queue WHERE user_id = ?').get(req.user.id);
   // Gabung (baru) hanya saat stasiun bebas: tidak ada yang main & tidak ada yang antre.
   // Yang sudah di dalam (waiting/current) tetap boleh (idempotent).
@@ -536,7 +563,7 @@ app.get('/api/queue/state', (req, res) => {
       waiting = f.length ? f : waiting;
     }
   }
-  res.json({ current, waiting, total_waiting: waiting.length });
+  res.json({ current, waiting, total_waiting: waiting.length, display_mode: unityDisplayMode });
 });
 
 // Unity: advance to next player. Marks current done, promotes earliest
@@ -676,6 +703,10 @@ function getRound() {
   return currentRound;
 }
 app.post('/api/queue/compete', authMiddleware, (req, res) => {
+  // Leaderboard mode: lock READY for everyone
+  if (unityDisplayMode === 'leaderboard') {
+    return res.json({ success: false, reason: 'leaderboard', message: 'Leaderboard is showing — please wait' });
+  }
   // Satu waktu cuma 1 pemain: tolak kalau stasiun sibuk (ada yang main)
   // atau sudah ada yang antre (selain diri sendiri).
   const hasCurrent = db.prepare("SELECT 1 FROM queue WHERE status='current'").get();
@@ -722,7 +753,8 @@ app.post('/api/admin/reset', (req, res) => {
   db.prepare("DELETE FROM queue").run();
   try { db.prepare("DELETE FROM play_clicks").run(); } catch(_){}
   currentRound += 1;
-  res.json({ success: true });
+  unityDisplayMode = 'game';
+  res.json({ success: true, mode: unityDisplayMode });
 });
 // Admin reset all data (queue + history + leaderboard + users)
 app.post('/api/admin/reset-all', (req, res) => {
@@ -732,7 +764,8 @@ app.post('/api/admin/reset-all', (req, res) => {
   db.prepare("DELETE FROM active_sessions").run();
   db.prepare("DELETE FROM users").run();
   currentRound = 1;
-  res.json({ success: true });
+  unityDisplayMode = 'game';
+  res.json({ success: true, mode: unityDisplayMode });
 });
 app.post('/api/admin/end-game', (req, res) => {
   const cur = db.prepare("SELECT user_id, username FROM queue q JOIN users u ON u.id=q.user_id WHERE q.status='current'").get();

@@ -100,9 +100,25 @@ GET /api/queue/state
     "current": { "username": "A", "display_name": "A",
                  "best_score": 120, "ready": 1, "turn_started_at": "..." } | null,
     "waiting": [ { "username": "B", "position": 2 }, ... ],
-    "total_waiting": 1
+    "total_waiting": 1,
+    "display_mode": "game" | "leaderboard"
   }
 ```
+
+### 4.2b. Mode layar Unity (tombol 🏆 di /admin)
+
+> Admin klik **Show LB on Unity** → Unity tampil leaderboard fullscreen + semua tombol READY di HP dikunci (klik READY tidak memunculkan nama di Unity). Klik **Back to Game** → normal lagi.
+
+```
+GET /api/display/mode
+→ { "mode": "game" | "leaderboard" }
+
+POST /api/admin/display-mode   (admin saja, tanpa key di LAN)
+Body: { "mode": "leaderboard" }  → Unity tampil LB, join → 409 reason=leaderboard
+Body: { "mode": "game" }         → Unity kembali ke QR / now-playing
+```
+
+Loop Unity: poll `GET /api/display/mode` tiap 2 detik (atau baca `display_mode` dari state). Kalau `leaderboard` → aktifkan `leaderboardPanel`, sembunyikan home/game, **jangan claim/start game baru**. Lihat `TennisSessionController.DisplayModeLoop()` + `SetLeaderboardMode()`.
 
 **Ambil token giliran** — sekali per giliran baru, simpan PlayerPrefs:
 
