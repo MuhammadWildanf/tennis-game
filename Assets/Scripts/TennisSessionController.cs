@@ -84,9 +84,9 @@ public class TennisSessionController : MonoBehaviour
         {
             if (isPlaying) { yield return new WaitForSeconds(statePollInterval); continue; }
 
-            // Kabari server tiap loop: di home = server boleh buka READY pemain.
-            // Bukan di home (main / takeover) = server kunci READY.
-            StartCoroutine(ReportHomeRoutine(!isPlaying && displayMode == "game"));
+            // Kabari server tiap loop: di home/game/howtoplay = server boleh buka READY.
+            // Leaderboard saja yang dikunci (takeover). Main = kunci juga.
+            StartCoroutine(ReportHomeRoutine(!isPlaying && displayMode != "leaderboard"));
 
             bool reqDone = false;
             QueueState state = null;
@@ -103,10 +103,11 @@ public class TennisSessionController : MonoBehaviour
 
                 UpdateHomeUI(state);
 
-                if (displayMode != "game")
+                if (displayMode == "leaderboard")
                 {
-                    // Takeover admin (LB / How to Play fullscreen): jangan claim/start game baru.
+                    // Leaderboard fullscreen: jangan claim/start game baru.
                     // READY sudah dikunci server-side (join -> 409), jadi tidak ada current baru.
+                    // (How-to-play TIDAK mengunci: tetap claim/start seperti biasa.)
                 }
                 else if (state.current == null)
                 {

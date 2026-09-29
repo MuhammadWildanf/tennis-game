@@ -196,19 +196,21 @@
       $('#sim-user').textContent = turnUser || '–';
       const mode = state.display_mode || 'game';
       $('#sim-mode').textContent = mode;
-      const takeover = mode && mode !== 'game';
-      $('#sim-lb-banner').style.display = takeover ? '' : 'none';
-      if (takeover) $('#sim-lb-banner').textContent = mode === 'howtoplay' ? '❓ HOW TO PLAY mode (admin) — READY dikunci' : '🏆 LEADERBOARD mode (admin) — READY dikunci';
+      const takeover = mode === 'leaderboard';
+      $('#sim-lb-banner').style.display = takeover || mode === 'howtoplay' ? '' : 'none';
+      if (mode === 'howtoplay') $('#sim-lb-banner').textContent = '❓ HOW TO PLAY (info saja — READY tetap buka)';
+      else if (takeover) $('#sim-lb-banner').textContent = '🏆 LEADERBOARD mode (admin) — READY dikunci';
     }
 
     // === loop Unity asli (usher mode): polling + claim + lapor home, langsung main ===
-    // + takeover mode admin: jangan claim/start baru (READY dikunci server)
+    // + leaderboard admin: jangan claim/start baru (READY dikunci server; howtoplay TIDAK mengunci)
     async function pollOnce() {
       try {
         const s = await call('GET', '/api/queue/state');
-        const homeNow = (s.display_mode || 'game') === 'game' && !turnToken && !s.current;
+        const lbTakeover = (s.display_mode || 'game') === 'leaderboard';
+        const homeNow = !lbTakeover && !turnToken && !s.current;
         try { await call('POST', '/api/unity/home', { at_home: homeNow }); } catch (_) {}
-        if (s.display_mode && s.display_mode !== 'game') { render(s); return; }
+        if (lbTakeover) { render(s); return; }
         if (!s.current) {
           if (turnUser) log('giliran selesai, kembali idle — tunggu pick usher berikut', 'inf');
           turnToken = null; turnUser = null;

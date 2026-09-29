@@ -189,7 +189,7 @@
     async function refreshReadyLock(){
       const btn=$('#join-btn');if(!btn)return;
       const mode=await getDisplayMode();
-      if(mode && mode!=='game'){
+      if(mode==='leaderboard'){
         btn.disabled=true;btn.style.opacity='.45';btn.style.filter='grayscale(1)';
         idleNote('Please wait');
         return true;
@@ -222,11 +222,11 @@
       const lockNote = () => 'Please wait';
       const unityNote = 'Please wait';
       try {
-        // 1. Admin takeover di Unity (leaderboard/howtoplay)? -> kunci total, jangan tampilkan nama di Unity
+        // 1. Admin tampilkan leaderboard di Unity? -> kunci total (howtoplay tidak mengunci)
         const mode = await getDisplayMode();
-        if (mode && mode !== 'game') { idleNote(lockNote(mode)); return; }
+        if (mode === 'leaderboard') { idleNote(lockNote(mode)); return; }
         const st = await api('/api/queue/state');
-        if (st.display_mode && st.display_mode !== 'game') { idleNote(lockNote(st.display_mode)); return; }
+        if (st.display_mode === 'leaderboard') { idleNote(lockNote(st.display_mode)); return; }
         // 2. Unity belum di home (lapor via POST /api/unity/home)? -> kunci sampai Unity siap
         if (!st.unity_home) { idleNote(unityNote); return; }
         if (st.current || st.total_waiting > 0) {

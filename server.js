@@ -432,7 +432,7 @@ app.get('/api/unity/info', (req, res) => {
       usher_only: 'USHER-ONLY: player does NOT press START. pick/next sets ready=1 instantly. Unity starts the game as soon as a new current appears + claim-turn succeeds.',
       usher_mode_staff_picks: 'staff page {BASE}/queue: POST /api/queue/pick {username, force?} -> picks ANY waiting player (free order). Blocked 409 with need_force when someone is playing unless force:true. With staff pick, Unity does NOT call next() — just polls state. Skip button = POST /api/queue/next (FIFO).',
       unity_poll_state: 'GET /api/queue/state every 2s -> {current:{username, ready, turn_started_at}|null, waiting:[{username, position}], total_waiting, display_mode:"game"|"leaderboard"|"howtoplay"}',
-      unity_display_mode: 'ADMIN forces Unity screen: POST /api/admin/display-mode {mode:"game"|"leaderboard"|"howtoplay"}. Unity polls GET /api/display/mode (or reads display_mode in state): leaderboard = show LB fullscreen, howtoplay = show How-To-Play fullscreen; both = DO NOT claim/start new game (READY is locked server-side: join->409 reason=mode). game = back to normal QR/now-playing loop.',
+      unity_display_mode: 'ADMIN forces Unity screen: POST /api/admin/display-mode {mode:"game"|"leaderboard"|"howtoplay"}. leaderboard = show LB fullscreen + DO NOT claim/start new game (READY locked server-side: join->409 reason=leaderboard). howtoplay = show How-To-Play fullscreen (info only, READY stays open, Unity still claims/starts). game = back to normal QR/now-playing loop.',
       unity_home_heartbeat: 'READY GATE: Unity must POST /api/unity/home {at_home:true} every ~2s while its HOME screen is showing (send false when leaving home). Server opens READY only with a heartbeat fresher than 8s; otherwise join->409 reason=unity-not-ready. State + display/mode expose unity_home so HP/admin can show "Unity getting ready".',
       unity_auto_rule: 'every 2s: state=GET /api/queue/state; if new current appears -> POST /api/queue/claim-turn (save token, OVERWRITE old one); then START GAME IMMEDIATELY. After POST /api/score -> back to polling (usher picks next). No next() in usher mode.',
       unity_next: 'POST /api/queue/next = SKIP/FIFO fallback (staff Skip button). Usher-driven flow does NOT use next() from Unity: staff picks via /api/queue/pick, Unity claims via /api/queue/claim-turn.',
@@ -454,8 +454,8 @@ app.get('/api/unity/info', (req, res) => {
 // 'game' = normal (Unity shows QR / now-playing + player name on READY).
 // 'leaderboard' = admin forces Unity to show LEADERBOARD fullscreen +
 //                 all HP READY buttons are locked (no new current can appear).
-// 'howtoplay' = admin forces Unity to show HOW TO PLAY fullscreen +
-//               all HP READY buttons are locked too.
+// 'howtoplay' = admin forces Unity to show HOW TO PLAY fullscreen (info only,
+//               does NOT lock READY — players can still join and play).
 let unityDisplayMode = 'game';
 
 // Public (Unity + HP poll this): which screen should Unity show?
@@ -521,10 +521,10 @@ function queuePosition(userId) {
 // Mobile: join the queue (idempotent — same user gets existing spot back;
 // finished players rejoin at the back of the line)
 app.post('/api/queue/join', authMiddleware, (req, res) => {
-  // Takeover mode (leaderboard/howtoplay): lock READY for everyone (admin owns the Unity screen)
-  if (unityDisplayMode !== 'game') {
-    const msg = unityDisplayMode === 'howtoplay' ? 'How to play is showing — please wait' : 'Leaderboard is showing — please wait';
-    return res.status(409).json({ error: msg, reason: unityDisplayMode });
+  // Leaderboard takeover: lock READY for everyone (admin owns the Unity screen).
+  // How-to-play is info only: does NOT lock READY.
+  if (unityDisplayMode === 'leaderboard') {
+    return res.status(409).json({ error: 'Leaderboard is showing — please wait', reason: 'leaderboard' });
   }
   // Unity not home (offline/playing/takeover screen): lock READY until fresh heartbeat
   if (!unityHomeFresh()) {
@@ -732,10 +732,9 @@ function getRound() {
   return currentRound;
 }
 app.post('/api/queue/compete', authMiddleware, (req, res) => {
-  // Takeover mode (leaderboard/howtoplay): lock READY for everyone
-  if (unityDisplayMode !== 'game') {
-    const msg = unityDisplayMode === 'howtoplay' ? 'How to play is showing — please wait' : 'Leaderboard is showing — please wait';
-    return res.json({ success: false, reason: unityDisplayMode, message: msg });
+  // Leaderboard takeover: lock READY for everyone. How-to-play does NOT lock.
+  if (unityDisplayMode === 'leaderboard') {
+    return res.json({ success: false, reason: 'leaderboard', message: 'Leaderboard is showing — please wait' });
   }
   // Unity not home: lock READY until fresh heartbeat
   if (!unityHomeFresh()) {

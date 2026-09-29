@@ -108,19 +108,19 @@ GET /api/queue/state
 
 ### 4.2b. Mode layar Unity (tombol 🎮 / 🏆 / ❓ di /admin)
 
-> Admin paksa layar Unity: **Game** (normal), **LB** (leaderboard fullscreen), atau **How to Play** (fullscreen). Saat takeover (LB / How to Play), semua tombol READY di HP dikunci (klik READY tidak memunculkan nama di Unity). Klik **Game** → normal lagi.
+> Admin paksa layar Unity: **Game** (normal), **LB** (leaderboard fullscreen — SEMUA READY dikunci), atau **How to Play** (fullscreen info — TIDAK mengunci, pemain tetap bisa READY + main). Klik **Game** → normal lagi.
 
 ```
 GET /api/display/mode
 → { "mode": "game" | "leaderboard" | "howtoplay" }
 
 POST /api/admin/display-mode   (admin saja, tanpa key di LAN)
-Body: { "mode": "leaderboard" }  → Unity tampil LB, join → 409 reason=leaderboard
-Body: { "mode": "howtoplay" }    → Unity tampil How to Play, join → 409 reason=howtoplay
+Body: { "mode": "leaderboard" }  → Unity tampil LB, join → 409 reason=leaderboard (READY dikunci)
+Body: { "mode": "howtoplay" }    → Unity tampil How to Play, READY TETAP BUKA
 Body: { "mode": "game" }         → Unity kembali ke QR / now-playing
 ```
 
-Loop Unity: poll `GET /api/display/mode` tiap 2 detik (atau baca `display_mode` dari state). Kalau bukan `game` → aktifkan panel sesuai mode, sembunyikan sisanya, **jangan claim/start game baru**. Lihat `TennisSessionController.DisplayModeLoop()` + `SetDisplayMode()`.
+Loop Unity: poll `GET /api/display/mode` tiap 2 detik (atau baca `display_mode` dari state). Kalau `leaderboard` → aktifkan panel LB, sembunyikan sisanya, **jangan claim/start game baru**. Kalau `howtoplay` → tampilkan panel info tapi **tetap claim/start seperti biasa**. Lihat `TennisSessionController.DisplayModeLoop()` + `SetDisplayMode()`.
 
 ### 4.2c. Home heartbeat — syarat tombol READY (baru)
 
