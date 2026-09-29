@@ -84,6 +84,7 @@ habis game:
 | 2 | `GET /qr/join.png` | tampilkan QR (via IP LAN/domain, refresh 5 mnt) |
 | 3 | `GET /api/queue/state` | polling 2 detik: siapa main + antrian |
 | 4 | `POST /api/queue/claim-turn` | current baru muncul → ambil token (idempotent; OVERWRITE token lama; 404 = belum ada yang main; 409 = giliran sudah selesai) → LANGSUNG mulai game |
+| 4b | `POST /api/unity/home` | **WAJIB tiap ±2 detik**: `{at_home:true}` selama layar HOME tampil (kirim `false` saat masuk game/takeover). Tanpa heartbeat fresh (<8 detik) server KUNCI semua READY (`join` → 409 `reason=unity-not-ready`) |
 | 5 | `GET /api/profile` | opsional: verifikasi token / best score |
 | 6 | `POST /api/score` | game selesai (token hangus otomatis) |
 | 7 | `GET /api/leaderboard?sort=best_score&limit=10` | layar leaderboard, refresh 15–30 detik |
@@ -105,20 +106,25 @@ GET /api/queue/state
   }
 ```
 
-### 4.2b. Mode layar Unity (tombol 🏆 di /admin)
+### 4.2b. Mode layar Unity (tombol 🎮 / 🏆 / ❓ di /admin)
 
-> Admin klik **Show LB on Unity** → Unity tampil leaderboard fullscreen + semua tombol READY di HP dikunci (klik READY tidak memunculkan nama di Unity). Klik **Back to Game** → normal lagi.
+> Admin paksa layar Unity: **Game** (normal), **LB** (leaderboard fullscreen), atau **How to Play** (fullscreen). Saat takeover (LB / How to Play), semua tombol READY di HP dikunci (klik READY tidak memunculkan nama di Unity). Klik **Game** → normal lagi.
 
 ```
 GET /api/display/mode
-→ { "mode": "game" | "leaderboard" }
+→ { "mode": "game" | "leaderboard" | "howtoplay" }
 
 POST /api/admin/display-mode   (admin saja, tanpa key di LAN)
 Body: { "mode": "leaderboard" }  → Unity tampil LB, join → 409 reason=leaderboard
+Body: { "mode": "howtoplay" }    → Unity tampil How to Play, join → 409 reason=howtoplay
 Body: { "mode": "game" }         → Unity kembali ke QR / now-playing
 ```
 
-Loop Unity: poll `GET /api/display/mode` tiap 2 detik (atau baca `display_mode` dari state). Kalau `leaderboard` → aktifkan `leaderboardPanel`, sembunyikan home/game, **jangan claim/start game baru**. Lihat `TennisSessionController.DisplayModeLoop()` + `SetLeaderboardMode()`.
+Loop Unity: poll `GET /api/display/mode` tiap 2 detik (atau baca `display_mode` dari state). Kalau bukan `game` → aktifkan panel sesuai mode, sembunyikan sisanya, **jangan claim/start game baru**. Lihat `TennisSessionController.DisplayModeLoop()` + `SetDisplayMode()`.
+
+### 4.2c. Home heartbeat — syarat tombol READY (baru)
+
+> Pemain baru boleh READY kalau Unity sedang di home. Unity wajib `POST /api/unity/home {at_home:true}` tiap ±2 detik selama layar home tampil (kirim `{at_home:false}` begitu masuk game / takeover). Server buka READY hanya kalau heartbeat < 8 detik; selebihnya `join` → `409 {reason:"unity-not-ready"}` dan HP tampil "⌛ Unity is getting ready". `state` + `display/mode` ikut kirim `unity_home` (bool) untuk indikator di HP/admin/usher.
 
 **Ambil token giliran** — sekali per giliran baru, simpan PlayerPrefs:
 

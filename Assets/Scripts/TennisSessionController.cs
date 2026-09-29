@@ -22,6 +22,7 @@ public class TennisSessionController : MonoBehaviour
     public GameObject homePanel;
     public GameObject gamePanel;
     public GameObject leaderboardPanel; // drag panel LB fullscreen ke sini
+    public GameObject howToPlayPanel; // drag panel How to Play fullscreen ke sini
     public RawImage qrImage;
     public Text statusText;
     public Text nowPlayingText;
@@ -32,7 +33,7 @@ public class TennisSessionController : MonoBehaviour
     string rememberedUsername = null;
     string turnToken = null;
     bool isPlaying = false;
-    bool leaderboardMode = false; // true = admin force LB, READY dikunci server-side
+    string displayMode = "game"; // "game" | "leaderboard" | "howtoplay" — dari admin
     Coroutine pollRoutine;
 
     const string PREF_TURN_TOKEN = "turn_token";
@@ -83,6 +84,10 @@ public class TennisSessionController : MonoBehaviour
         {
             if (isPlaying) { yield return new WaitForSeconds(statePollInterval); continue; }
 
+            // Kabari server tiap loop: di home = server boleh buka READY pemain.
+            // Bukan di home (main / takeover) = server kunci READY.
+            StartCoroutine(ReportHomeRoutine(!isPlaying && displayMode == "game"));
+
             bool reqDone = false;
             QueueState state = null;
             string errMsg = null;
@@ -92,15 +97,15 @@ public class TennisSessionController : MonoBehaviour
 
             if (state != null)
             {
-                // Admin bisa force leaderboard via /admin — ikut display_mode dari state juga
+                // Admin bisa force layar via /admin — ikut display_mode dari state juga
                 if (!string.IsNullOrEmpty(state.display_mode))
-                    SetLeaderboardMode(state.display_mode == "leaderboard");
+                    SetDisplayMode(state.display_mode);
 
                 UpdateHomeUI(state);
 
-                if (leaderboardMode)
+                if (displayMode != "game")
                 {
-                    // LB tampil fullscreen: jangan claim/start game baru.
+                    // Takeover admin (LB / How to Play fullscreen): jangan claim/start game baru.
                     // READY sudah dikunci server-side (join -> 409), jadi tidak ada current baru.
                 }
                 else if (state.current == null)
@@ -157,6 +162,8 @@ public class TennisSessionController : MonoBehaviour
         ShowHome(false);
         SetStatus($"Now playing: {username}");
         Debug.Log($"[Game] START untuk {username} - token disimpan, jangan ganti mid-game!");
+        // Langsung kabari server "tidak di home" supaya READY langsung dikunci
+        StartCoroutine(ReportHomeRoutine(false));
 
         // TODO: panggil gameplay asli kamu di sini, contoh:
         // FindObjectOfType<TennisMatch>().StartMatch(username, (score, result) => SubmitScoreAndReturn(score, result));
@@ -208,37 +215,61 @@ public class TennisSessionController : MonoBehaviour
 
     // ── Leaderboard & QR ───────────────────────────────────────
 
-    // Polling mode layar dari admin: "game" normal, "leaderboard" = LB fullscreen + READY dikunci.
-    // Klik READY di HP tidak akan memunculkan nama di Unity karena server tolak join saat mode LB.
+    // Lapor home ke server (syarat READY dibuka). Dipanggil tiap loop + saat start game.
+    IEnumerator ReportHomeRoutine(bool atHome)
+    {
+        bool done = false;
+        api.ReportHome(atHome,
+            res => { done = true; },
+            e => { Debug.LogWarning("[Home] " + e); done = true; });
+        yield return new WaitUntil(() => done);
+    }
+
+    // Polling mode layar dari admin: "game" normal, "leaderboard"/"howtoplay" = takeover
+    // fullscreen + READY dikunci. Klik READY di HP tidak akan memunculkan nama di Unity
+    // karena server tolak join saat mode takeover.
     IEnumerator DisplayModeLoop()
     {
         while (true)
         {
             bool done = false;
             api.GetDisplayMode(
-                res => { SetLeaderboardMode(res != null && res.mode == "leaderboard"); done = true; },
+                res => { SetDisplayMode(res != null ? res.mode : "game"); done = true; },
                 e => { Debug.LogWarning("[DisplayMode] " + e); done = true; });
             yield return new WaitUntil(() => done);
             yield return new WaitForSeconds(displayModePollInterval);
         }
     }
 
-    void SetLeaderboardMode(bool on)
+    void SetDisplayMode(string mode)
     {
-        if (leaderboardMode == on) return;
-        leaderboardMode = on;
-        if (on)
+        if (string.IsNullOrEmpty(mode)) mode = "game";
+        if (mode != "game" && mode != "leaderboard" && mode != "howtoplay") mode = "game";
+        if (displayMode == mode) return;
+        displayMode = mode;
+        if (mode == "leaderboard")
         {
-            // Paksa tampil LB, sembunyikan home/game. Jangan start game walau ada current sisa.
+            // Paksa tampil LB, sembunyikan yang lain. Jangan start game walau ada current sisa.
             if (homePanel != null) homePanel.SetActive(false);
             if (gamePanel != null) gamePanel.SetActive(false);
+            if (howToPlayPanel != null) howToPlayPanel.SetActive(false);
             if (leaderboardPanel != null) leaderboardPanel.SetActive(true);
             SetStatus("Leaderboard mode (admin) — READY locked");
             Debug.Log("[Display] Admin -> LEADERBOARD fullscreen, READY dikunci");
         }
+        else if (mode == "howtoplay")
+        {
+            if (homePanel != null) homePanel.SetActive(false);
+            if (gamePanel != null) gamePanel.SetActive(false);
+            if (leaderboardPanel != null) leaderboardPanel.SetActive(false);
+            if (howToPlayPanel != null) howToPlayPanel.SetActive(true);
+            SetStatus("How to Play mode (admin) — READY locked");
+            Debug.Log("[Display] Admin -> HOW TO PLAY fullscreen, READY dikunci");
+        }
         else
         {
             if (leaderboardPanel != null) leaderboardPanel.SetActive(false);
+            if (howToPlayPanel != null) howToPlayPanel.SetActive(false);
             if (!isPlaying) ShowHome(true);
             SetStatus("Game mode");
             Debug.Log("[Display] Admin -> GAME kembali normal");
@@ -300,7 +331,7 @@ public class TennisSessionController : MonoBehaviour
 
     void ShowHome(bool show)
     {
-        if (leaderboardMode)
+        if (displayMode != "game")
         {
             if (homePanel != null) homePanel.SetActive(false);
             if (gamePanel != null) gamePanel.SetActive(false);

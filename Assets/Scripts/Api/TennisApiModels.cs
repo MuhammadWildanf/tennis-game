@@ -121,5 +121,14 @@ public class ErrorResponse
 [Serializable]
 public class DisplayModeResponse
 {
-    public string mode; // "game" | "leaderboard"
+    public string mode; // "game" | "leaderboard" | "howtoplay"
+}
+
+[Serializable]
+public class HomeHeartbeatResponse
+{
+    public bool success;
+    public bool at_home;
+    public bool unity_home;
+    public string server_time;
 }

@@ -103,7 +103,7 @@
     <section id="join-status" class="ev-card hidden">
       <h2 id="queue-title">ARE YOU READY?</h2>
       <div class="ev-pill queue-name" id="queue-name">–</div>
-      <p class="queue-msg" id="queue-msg">Please wait…</p>
+      <p class="queue-msg" id="queue-msg">Please wait</p>
     </section>
   </main>
 
@@ -120,7 +120,7 @@
       if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
       const res = await fetch(path, { ...options, headers });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || 'Request failed');
+      if (!res.ok) { const e = new Error(data.error || 'Request failed'); e.status = res.status; e.reason = data.reason; throw e; }
       return data;
     }
     function toast(t) {
@@ -164,7 +164,14 @@
         await showIdle();
       } catch (err) {
         if (/taken/i.test(err.message || '') && alias === (localStorage.getItem('ct_user') || '')) {
-          await showIdle(); // nama sendiri, lanjut seperti biasa
+          // Nama sendiri: pastikan token simpanan masih hidup dulu.
+          // Kalau mati (mis. sesi lama), jangan lanjut — nanti READY 401 "Authentication required".
+          try { await api('/api/profile'); await showIdle(); }
+          catch (_) {
+            authToken = null; localStorage.removeItem('ct_token');
+            errEl.textContent = 'Session expired and nickname is taken. Try another nickname.';
+            errEl.classList.add('show');
+          }
         } else {
           errEl.textContent = /taken/i.test(err.message || '') ? 'Nickname already taken, please enter a new nickname' : err.message;
           errEl.classList.add('show');
@@ -182,11 +189,21 @@
     async function refreshReadyLock(){
       const btn=$('#join-btn');if(!btn)return;
       const mode=await getDisplayMode();
-      if(mode==='leaderboard'){
+      if(mode && mode!=='game'){
         btn.disabled=true;btn.style.opacity='.45';btn.style.filter='grayscale(1)';
-        idleNote('🏆 Leaderboard is showing on the big screen — please wait…');
+        idleNote('Please wait');
         return true;
-      }else{
+      }
+      // Unity belum lapor di home (offline / masih loading / lagi main): kunci juga
+      try{
+        const st=await fetch('/api/queue/state').then(r=>r.json());
+        if(!st.unity_home){
+          btn.disabled=true;btn.style.opacity='.45';btn.style.filter='grayscale(1)';
+          idleNote('Please wait');
+          return true;
+        }
+      }catch(_){}
+      {
         if(!btn.querySelector('.btn-spinner')||btn.querySelector('.btn-spinner').style.display!=='inline-block'){btn.disabled=false;btn.style.opacity='';btn.style.filter='';}
         return false;
       }
@@ -201,14 +218,17 @@
       const btn = $('#join-btn');
       loading(btn, true);
       idleNote('');
-      const busyNote = 'Another player is playing. Please try again later!';
-      const lbNote = '🏆 Leaderboard is showing on the big screen — please wait…';
+      const busyNote = 'Please wait';
+      const lockNote = () => 'Please wait';
+      const unityNote = 'Please wait';
       try {
-        // 1. Admin force leaderboard di Unity? -> kunci total, jangan tampilkan nama di Unity
+        // 1. Admin takeover di Unity (leaderboard/howtoplay)? -> kunci total, jangan tampilkan nama di Unity
         const mode = await getDisplayMode();
-        if (mode === 'leaderboard') { idleNote(lbNote); return; }
+        if (mode && mode !== 'game') { idleNote(lockNote(mode)); return; }
         const st = await api('/api/queue/state');
-        if (st.display_mode === 'leaderboard') { idleNote(lbNote); return; }
+        if (st.display_mode && st.display_mode !== 'game') { idleNote(lockNote(st.display_mode)); return; }
+        // 2. Unity belum di home (lapor via POST /api/unity/home)? -> kunci sampai Unity siap
+        if (!st.unity_home) { idleNote(unityNote); return; }
         if (st.current || st.total_waiting > 0) {
           idleNote(busyNote);
           return;
@@ -216,11 +236,13 @@
         try {
           await api('/api/queue/join', { method: 'POST' });
         } catch (je) {
-          if (/leaderboard/i.test(je.message || '')) { idleNote(lbNote); return; }
+          if (je.reason === 'leaderboard' || je.reason === 'howtoplay') { idleNote(lockNote(je.reason)); return; }
+          if (je.reason === 'unity-not-ready') { idleNote(unityNote); return; }
           throw je;
         }
         const r = await api('/api/queue/compete', { method: 'POST' });
-        if (r.reason === 'leaderboard') { idleNote(lbNote); return; }
+        if (r.reason === 'leaderboard' || r.reason === 'howtoplay') { idleNote(lockNote(r.reason)); return; }
+        if (r.reason === 'unity-not-ready') { idleNote(unityNote); return; }
         if (r.reason === 'playing') {
           try { await api('/api/queue/leave', { method: 'POST' }); } catch (_) { }
           idleNote(busyNote);
@@ -230,6 +252,16 @@
         pollTimer = pollTimer || setInterval(refreshStatus, 3000);
         await refreshStatus();
       } catch (err) {
+        // Token mati (401) → jangan tampilkan "Authentication required" mentah:
+        // buang sesi, kembalikan ke form nickname dengan pesan yang jelas.
+        if (err.status === 401 || /authenticat|expired session|invalid.*session/i.test(err.message || '')) {
+          authToken = null; localStorage.removeItem('ct_token');
+          show('#alias-wrap');
+          const ae = $('#join-alias-error');
+          ae.textContent = 'Session expired — please enter your nickname again.';
+          ae.classList.add('show');
+          return;
+        }
         idleNote(/busy|try again later/i.test(err.message || '') ? busyNote : err.message);
       } finally {
         loading(btn, false);
@@ -268,7 +300,14 @@
         msg.classList.remove('big');
         msg.textContent = 'Please head to the game arena';
         window._lastStatus = s.status;
-      } catch (_) { }
+      } catch (e) {
+        // Token mati saat polling: buang sesi, kembali ke form nickname (bukan stuck).
+        if (e && e.status === 401) {
+          authToken = null; localStorage.removeItem('ct_token');
+          clearInterval(pollTimer); pollTimer = null;
+          show('#alias-wrap');
+        }
+      }
     }
 
     async function showIdle() {

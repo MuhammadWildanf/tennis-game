@@ -39,11 +39,21 @@ public class TennisApiClient : MonoBehaviour
         => StartCoroutine(GetJson("/api/queue/state", onSuccess, onError));
 
     /// <summary>
-    /// Mode layar dari admin: "game" (normal) atau "leaderboard" (fullscreen LB + READY dikunci).
+    /// Mode layar dari admin: "game" (normal), "leaderboard" / "howtoplay" (takeover + READY dikunci).
     /// Poll tiap 2-3 detik, atau baca state.display_mode sekalian.
     /// </summary>
     public Coroutine GetDisplayMode(Action<DisplayModeResponse> onSuccess, Action<string> onError)
         => StartCoroutine(GetJson("/api/display/mode", onSuccess, onError));
+
+    /// <summary>
+    /// Lapor ke server: "saya di HOME". WAJIB tiap ~2 detik selama layar home tampil
+    /// (kirim false saat masuk game / takeover). Tanpa heartbeat fresh, server KUNCI semua READY.
+    /// </summary>
+    public Coroutine ReportHome(bool atHome, Action<HomeHeartbeatResponse> onSuccess, Action<string> onError)
+    {
+        string body = "{\"at_home\":" + (atHome ? "true" : "false") + "}";
+        return StartCoroutine(PostJson("/api/unity/home", body, null, onSuccess, onError));
+    }
 
     /// <summary>
     /// Ambil token giliran. Idempotent: panggil tiap ada current baru, overwrite token lama.

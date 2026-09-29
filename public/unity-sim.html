@@ -136,7 +136,7 @@
             <span>Playing as</span><b id="sim-user">–</b>
             <span>Display</span><b id="sim-mode">game</b>
           </div>
-          <p id="sim-lb-banner" style="display:none;margin-top:10px;background:rgba(245,184,30,.15);border:1px solid rgba(245,184,30,.5);color:#f5c542;border-radius:10px;padding:10px;font-size:13px;font-weight:700">🏆 LEADERBOARD mode (admin) — Unity tampil LB fullscreen, READY dikunci</p>
+          <p id="sim-lb-banner" style="display:none;margin-top:10px;background:rgba(245,184,30,.15);border:1px solid rgba(245,184,30,.5);color:#f5c542;border-radius:10px;padding:10px;font-size:13px;font-weight:700">🏆 Takeover mode (admin) — Unity tampil LB / How to Play, READY dikunci</p>
         </div>
         <div>
           <h3 style="font-size:15px;font-weight:800">Kontrol (persis loop Unity asli)</h3>
@@ -196,15 +196,19 @@
       $('#sim-user').textContent = turnUser || '–';
       const mode = state.display_mode || 'game';
       $('#sim-mode').textContent = mode;
-      $('#sim-lb-banner').style.display = mode === 'leaderboard' ? '' : 'none';
+      const takeover = mode && mode !== 'game';
+      $('#sim-lb-banner').style.display = takeover ? '' : 'none';
+      if (takeover) $('#sim-lb-banner').textContent = mode === 'howtoplay' ? '❓ HOW TO PLAY mode (admin) — READY dikunci' : '🏆 LEADERBOARD mode (admin) — READY dikunci';
     }
 
-    // === loop Unity asli (usher mode): polling + claim, langsung main ===
-    // + leaderboard mode admin: jangan claim/start baru (READY dikunci server)
+    // === loop Unity asli (usher mode): polling + claim + lapor home, langsung main ===
+    // + takeover mode admin: jangan claim/start baru (READY dikunci server)
     async function pollOnce() {
       try {
         const s = await call('GET', '/api/queue/state');
-        if ((s.display_mode || 'game') === 'leaderboard') { render(s); return; }
+        const homeNow = (s.display_mode || 'game') === 'game' && !turnToken && !s.current;
+        try { await call('POST', '/api/unity/home', { at_home: homeNow }); } catch (_) {}
+        if (s.display_mode && s.display_mode !== 'game') { render(s); return; }
         if (!s.current) {
           if (turnUser) log('giliran selesai, kembali idle — tunggu pick usher berikut', 'inf');
           turnToken = null; turnUser = null;

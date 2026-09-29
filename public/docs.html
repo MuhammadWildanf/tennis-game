@@ -180,19 +180,20 @@
     <div id="doc-groups"></div>
 
     <h2>Panduan Unity — 1 file .cs + cara pakai (lengkap)</h2>
-    <p class="flow">Untuk dev Unity: cukup <b>1 file</b> di bawah ini, copy utuh jadi <code class="p">Assets/Scripts/TennisUnityClient.cs</code> — tidak perlu file lain. Yang baru dari versi sebelumnya: script membaca <code class="p">display_mode</code> dari <code class="p">GET /api/queue/state</code>. Kalau admin klik 🏆 di /admin, Unity otomatis tampil panel leaderboard fullscreen + tidak claim/start game (tombol READY semua HP sudah dikunci server, jadi klik READY tidak memunculkan nama).</p>
+    <p class="flow">Untuk dev Unity: cukup <b>1 file</b> di bawah ini, copy utuh jadi <code class="p">Assets/Scripts/TennisUnityClient.cs</code> — tidak perlu file lain. Yang baru dari versi sebelumnya: script membaca <code class="p">display_mode</code> dari <code class="p">GET /api/queue/state</code>. Kalau admin takeover dari /admin (🎮 Game | 🏆 LB | ❓ How to Play), Unity otomatis tampil panel yang sesuai + tidak claim/start game (tombol READY semua HP sudah dikunci server, jadi klik READY tidak memunculkan nama).</p>
     <ol class="steps">
       <li><b>Copy 1 blok kode</b> di bawah utuh (dari <code class="p">using</code> sampai kurung tutup terakhir) → simpan sebagai <code class="p">Assets/Scripts/TennisUnityClient.cs</code>.</li>
       <li><b>Buat 1 GameObject</b> di Hierarchy (mis. "TennisClient") → drag script ini ke situ.</li>
       <li><b>Isi Base Url</b> dengan IP LAN PC server (lihat log <code class="p">npm start</code>, mis. <code class="p">http://192.168.88.32:2000</code>). JANGAN pakai localhost.</li>
-      <li><b>Siapkan 3 panel</b> di scene: Home (idle: QR + Now Playing), Game (gameplay), Leaderboard (fullscreen + 1 Text untuk isi LB). Drag masing-masing ke slot Home Panel / Game Panel / Leaderboard Panel. Slot Text boleh dikosongkan (null = dilewati).</li>
+      <li><b>Siapkan 4 panel</b> di scene: Home (idle: QR + Now Playing), Game (gameplay), Leaderboard (fullscreen + 1 Text untuk isi LB), How to Play (fullscreen info cara main). Drag masing-masing ke slot Home / Game / Leaderboard / How to Play Panel. Slot Text boleh dikosongkan (null = dilewati).</li>
       <li><b>Tekan Play.</b> Tes normal: HP scan QR → nickname → READY → usher pick ▶ di <code class="p">/control</code> → Unity langsung main + tampil nama.</li>
-      <li><b>Tes leaderboard:</b> admin klik 🏆 Show LB on Unity → dalam ±2 detik Unity tampil panel LB. HP coba READY → terkunci + pesan tunggu. Admin klik Back to Game → normal lagi.</li>
+      <li><b>Tes takeover:</b> admin klik 🏆 LB → dalam ±2 detik Unity tampil panel LB; klik ❓ How to Play → tampil panel cara main. HP coba READY → terkunci + pesan tunggu. Admin klik 🎮 Game → normal lagi.</li>
       <li><b>Sambungkan gameplay:</b> saat match selesai panggil <code class="p">tennisClient.SubmitScore(skor, "win")</code> atau <code class="p">"loss"</code> (referensi via drag di Inspector atau <code class="p">FindObjectOfType(typeof(TennisUnityClient))</code>). JANGAN panggil <code class="p">/api/queue/next</code> atau <code class="p">/api/queue/pick</code> dari Unity — itu kerjaan halaman usher. Aturan 401: kalau submit dapat 401 artinya skor sudah masuk, JANGAN resubmit.</li>
     </ol>
+    <p class="flow"><b>Yang HARUS diganti di script (3 titik, sudah ditandai <code class="p">*** GANTI ***</code> di kode):</b> 1) <code class="p">baseUrl</code> → IP LAN PC server + port; 2) isi <code class="p">StartGame()</code> → panggil gameplay asli kamu; 3) panggil <code class="p">SubmitScore()</code> dari script gameplay saat match selesai. Sisanya JANGAN diubah.</p>
     <pre class="cs">// TennisUnityClient.cs — 1 FILE SAJA. Copy utuh, drag ke 1 GameObject.
 // Alur: idle (QR) -&gt; usher pick di /control -&gt; claim -&gt; LANGSUNG main -&gt; SubmitScore.
-// Admin klik Show LB on Unity -&gt; panel LB fullscreen + READY dikunci (nama baru tidak muncul).
+// Admin takeover (LB / How to Play) -&gt; panel fullscreen + READY dikunci (nama baru tidak muncul).
 using System.Collections;
 using System.Text;
 using UnityEngine;
@@ -201,13 +202,14 @@ using UnityEngine.UI;
 
 public class TennisUnityClient : MonoBehaviour
 {
-    [Header("1. ISI DULU: IP LAN PC server (log npm start). JANGAN localhost.")]
-    public string baseUrl = "http://192.168.88.32:2000";
+    [Header("*** GANTI *** TITIK 1/3: IP LAN PC server (log npm start). JANGAN localhost.")]
+    public string baseUrl = "http://192.168.88.32:2000"; // CONTOH — ganti dengan IP kamu
 
     [Header("2. DRAG DARI HIERARCHY")]
     public GameObject homePanel;         // layar idle: QR + Now Playing
     public GameObject gamePanel;         // layar gameplay
-    public GameObject leaderboardPanel;  // layar LB fullscreen (muncul saat admin klik Show LB)
+    public GameObject leaderboardPanel;  // layar LB fullscreen (muncul saat admin klik LB)
+    public GameObject howToPlayPanel;   // layar How to Play fullscreen (muncul saat admin klik How to Play)
     public RawImage qrImage;             // gambar QR di homePanel (boleh null)
     public Text nowPlayingText;          // teks "Now Playing: X" (boleh null)
     public Text leaderboardText;         // teks isi LB (boleh null)
@@ -216,7 +218,7 @@ public class TennisUnityClient : MonoBehaviour
     string rememberedUsername = null;
     string turnToken = null;
     bool isPlaying = false;
-    bool lbMode = false;
+    string displayMode = "game"; // "game" | "leaderboard" | "howtoplay" — dari admin
     float lbRefreshAt = 0f;
 
     string BASE { get { return baseUrl.TrimEnd('/'); } }
@@ -230,6 +232,7 @@ public class TennisUnityClient : MonoBehaviour
     [System.Serializable] class ClaimRes { public string token; public UserInfo user; }
     [System.Serializable] class LbEntry { public int rank; public string username; public string display_name; public int best_score; public int wins; public int losses; }
     [System.Serializable] class LbWrap { public LbEntry[] items; }
+    [System.Serializable] class HomeRes { public bool success; public bool at_home; public bool unity_home; }
 
     void Start()
     {
@@ -256,11 +259,16 @@ public class TennisUnityClient : MonoBehaviour
         StartCoroutine(PollLoop());
     }
 
-    // Loop utama tiap 2 detik: baca display_mode + siapa yang di-pick usher
+    // Loop utama tiap 2 detik: lapor home + baca display_mode + siapa yang di-pick usher
     IEnumerator PollLoop()
     {
         while (true)
         {
+            // Kabari server tiap loop: di home = server boleh buka READY (otomatis, tanpa setting).
+            bool atHome = (isPlaying == false);
+            if (displayMode != "game") { atHome = false; }
+            StartCoroutine(ReportHome(atHome));
+
             using (UnityWebRequest r = UnityWebRequest.Get(BASE + "/api/queue/state"))
             {
                 r.timeout = 5;
@@ -268,11 +276,15 @@ public class TennisUnityClient : MonoBehaviour
                 if (r.result == UnityWebRequest.Result.Success)
                 {
                     QueueState s = JsonUtility.FromJson&lt;QueueState&gt;(r.downloadHandler.text);
-                    bool wantLB = (s.display_mode == "leaderboard");
-                    SetLBMode(wantLB);
-                    if (wantLB)
+                    string mode = (s.display_mode == null) ? "game" : s.display_mode;
+                    SetDisplayMode(mode);
+                    if (mode == "leaderboard")
                     {
                         yield return StartCoroutine(RefreshLB());
+                    }
+                    else if (mode != "game")
+                    {
+                        // howtoplay: panel statis, tidak perlu refresh — cukup tampil, jangan claim
                     }
                     else
                     {
@@ -294,9 +306,23 @@ public class TennisUnityClient : MonoBehaviour
         }
     }
 
-    // Current baru muncul -&gt; ambil token (OVERWRITE token lama) -&gt; LANGSUNG main
-    IEnumerator ClaimAndStart()
+    // Lapor home ke server (syarat READY dibuka). Otomatis tiap loop, tanpa setting.
+    IEnumerator ReportHome(bool atHome)
     {
+        string body = "{\"at_home\":" + (atHome ? "true" : "false") + "}";
+        byte[] raw = Encoding.UTF8.GetBytes(body);
+        using (UnityWebRequest r = new UnityWebRequest(BASE + "/api/unity/home", "POST"))
+        {
+            r.uploadHandler = new UploadHandlerRaw(raw);
+            r.downloadHandler = new DownloadHandlerBuffer();
+            r.timeout = 5;
+            r.SetRequestHeader("Content-Type", "application/json");
+            yield return r.SendWebRequest();
+        }
+    }
+
+    // Current baru muncul -&gt; ambil token (OVERWRITE token lama) -&gt; LANGSUNG main
+    IEnumerator ClaimAndStart()    {
         using (UnityWebRequest r = new UnityWebRequest(BASE + "/api/queue/claim-turn", "POST"))
         {
             r.downloadHandler = new DownloadHandlerBuffer();
@@ -318,10 +344,14 @@ public class TennisUnityClient : MonoBehaviour
         isPlaying = true;
         ShowPanel(gamePanel);
         SetStatus("Now playing: " + username);
-        // TODO: panggil gameplay asli di sini, mis. tennisMatch.StartMatch(username);
+        // *** GANTI *** TITIK 2/3: panggil gameplay asli kamu di sini, contoh:
+        // tennisMatch.StartMatch(username);
+        // Gameplay kamu yang menentukan kapan match selesai, lalu panggil TITIK 3/3.
     }
 
-    // PANGGIL INI dari script gameplay saat match selesai. result = "win" atau "loss".
+    // *** GANTI *** TITIK 3/3 (cara pakai, bukan isi): PANGGIL method ini dari script
+    // gameplay kamu saat match SELESAI. result = "win" atau "loss". Contoh:
+    //   FindObjectOfType(typeof(TennisUnityClient)) sebagai TennisUnityClient, lalu .SubmitScore(500, "win");
     public void SubmitScore(int score, string result)
     {
         StartCoroutine(SubmitScoreRoutine(score, result));
@@ -392,15 +422,21 @@ public class TennisUnityClient : MonoBehaviour
         }
     }
 
-    void SetLBMode(bool on)
+    void SetDisplayMode(string mode)
     {
-        if (lbMode == on) { return; }
-        lbMode = on;
-        if (on)
+        if (mode != "game" &amp;&amp; mode != "leaderboard" &amp;&amp; mode != "howtoplay") { mode = "game"; }
+        if (displayMode == mode) { return; }
+        displayMode = mode;
+        if (mode == "leaderboard")
         {
             ShowPanel(leaderboardPanel);
             lbRefreshAt = 0f;
             SetStatus("Leaderboard (admin) - READY dikunci");
+        }
+        else if (mode == "howtoplay")
+        {
+            ShowPanel(howToPlayPanel);
+            SetStatus("How to Play (admin) - READY dikunci");
         }
         else
         {
@@ -424,6 +460,7 @@ public class TennisUnityClient : MonoBehaviour
         if (homePanel != null) { homePanel.SetActive(p == homePanel); }
         if (gamePanel != null) { gamePanel.SetActive(p == gamePanel); }
         if (leaderboardPanel != null) { leaderboardPanel.SetActive(p == leaderboardPanel); }
+        if (howToPlayPanel != null) { howToPlayPanel.SetActive(p == howToPlayPanel); }
     }
 
     void SetStatus(string msg)
@@ -440,7 +477,7 @@ public class TennisUnityClient : MonoBehaviour
 
     const DOCS = {
       version: '1.1.0',
-      flow: 'Pemain scan QR statis → daftar alias → masuk antrian → usher pick di /queue → Unity claim-turn → langsung main → score tercatat atas nama picked player.',
+      flow: 'Pemain scan QR statis → daftar alias → READY (dibuka hanya jika Unity lapor di home via POST /api/unity/home) → usher pick di /queue → Unity claim-turn → langsung main → score tercatat atas nama picked player. Admin bisa paksa layar Unity (POST /api/admin/display-mode: game|leaderboard|howtoplay) — saat takeover semua READY dikunci.',
       groups: [
         {
           name: 'Unity (game client — usher-driven)',
@@ -454,16 +491,36 @@ public class TennisUnityClient : MonoBehaviour
               sample: { res: '(file PNG, bukan JSON)' }
             },
             {
-              method: 'GET', path: '/api/queue/state', auth: 'tidak', desc: 'Polling tiap 2 detik: siapa main + antrian + display_mode (game|leaderboard dari admin).',
-              sample: { res: { current: { username: 'A', display_name: 'A', best_score: 120, ready: 1, turn_started_at: '2026-09-17 11:30:14' }, waiting: [{ position: 2, username: 'B', display_name: 'B', created_at: '2026-09-17 11:30:14' }], total_waiting: 1, display_mode: 'game' } }
+              method: 'GET', path: '/api/queue/state', auth: 'tidak', desc: 'Polling tiap 2 detik: siapa main + antrian + display_mode (game|leaderboard|howtoplay dari admin) + unity_home (true = Unity di home, READY dibuka).',
+              sample: {
+                res_game: { current: null, waiting: [{ position: 1, username: 'B', display_name: 'B', created_at: '2026-09-17 11:30:14' }], total_waiting: 1, display_mode: 'game', unity_home: true },
+                res_takeover: { current: null, waiting: [], total_waiting: 0, display_mode: 'leaderboard', unity_home: false }
+              }
             },
             {
-              method: 'GET', path: '/api/display/mode', auth: 'tidak', desc: 'Mode layar Unity dari admin (polling 2–3 detik): game = normal, leaderboard = Unity tampil LB fullscreen + READY dikunci.',
-              sample: { res: { mode: 'game' } }
+              method: 'GET', path: '/api/display/mode', auth: 'tidak', desc: 'Mode layar Unity dari admin (polling 2–3 detik): game = normal, leaderboard/howtoplay = takeover + READY dikunci. Sertakan unity_home.',
+              sample: {
+                res_game: { mode: 'game', unity_home: true },
+                res_takeover: { mode: 'howtoplay', unity_home: false }
+              }
             },
             {
-              method: 'POST', path: '/api/queue/claim-turn', auth: 'tidak', desc: 'Begitu current baru muncul: ambil token giliran (OVERWRITE token lama) → langsung mulai game. 404 = belum ada yang main, 409 = giliran sudah selesai.',
-              sample: { req: '(tanpa body)', res: { token: '59ef92ee-…', user: { id: '…', username: 'A', display_name: 'A' } } }
+              method: 'POST', path: '/api/unity/home', auth: 'tidak', desc: 'WAJIB dari Unity tiap ±2 detik saat layar HOME tampil ({at_home:true}); kirim false saat masuk game/takeover. Tanpa heartbeat fresh (<8 detik) server KUNCI semua READY (join → 409 reason=unity-not-ready).',
+              sample: {
+                req_home: { at_home: true },
+                res_home: { success: true, at_home: true, unity_home: true, server_time: '…' },
+                req_away: { at_home: false },
+                res_away: { success: true, at_home: false, unity_home: false, server_time: '…' }
+              }
+            },
+            {
+              method: 'POST', path: '/api/queue/claim-turn', auth: 'tidak', desc: 'Begitu current baru muncul: ambil token giliran (OVERWRITE token lama) → langsung mulai game.',
+              sample: {
+                req: '(tanpa body)',
+                res_ok: { token: '59ef92ee-…', user: { id: '…', username: 'A', display_name: 'A' } },
+                res_404_idle: { status: 404, body: { error: 'No one is playing right now' } },
+                res_409_done: { status: 409, body: { error: 'Turn is over — score already recorded, wait for next pick' } }
+              }
             },
             {
               method: 'POST', path: '/api/score', auth: 'Bearer token giliran', desc: 'Sukses = token hangus + station bebas. 401 = sudah masuk, jangan resubmit.',
@@ -491,8 +548,23 @@ public class TennisUnityClient : MonoBehaviour
               sample: { req: { username: 'JAMES' }, res: { success: true, token: 'uuid-…', user: { id: '…', username: 'JAMES', display_name: 'JAMES' } } }
             },
             {
-              method: 'POST', path: '/api/queue/join', auth: 'Bearer token HP', desc: 'Masuk antrian (idempotent). Ditolak 409 reason=leaderboard saat admin tampilkan LB di Unity.',
-              sample: { req: '(tanpa body)', res: { success: true, user: { username: 'JAMES', display_name: 'JAMES' }, in_queue: true, status: 'waiting', position: 2, ahead: 1, station_idle: true } }
+              method: 'POST', path: '/api/queue/join', auth: 'Bearer token HP', desc: 'Masuk antrian (idempotent). Syarat: mode=game + heartbeat home Unity fresh.',
+              sample: {
+                req: '(tanpa body)',
+                res_ok: { success: true, user: { username: 'JAMES', display_name: 'JAMES' }, in_queue: true, status: 'waiting', position: 1, ahead: 0, station_idle: true },
+                res_409_takeover: { status: 409, body: { error: 'Leaderboard is showing — please wait', reason: 'leaderboard' } },
+                res_409_no_heartbeat: { status: 409, body: { error: 'Unity is not ready — please wait', reason: 'unity-not-ready' } },
+                res_409_busy: { status: 409, body: { error: 'Station is busy — please try again later', reason: 'playing' } }
+              }
+            },
+            {
+              method: 'POST', path: '/api/queue/compete', auth: 'Bearer token HP', desc: 'Klik READY: catat siapa paling cepat (data pembanding di play_clicks). Hasil sama dengan gate join.',
+              sample: {
+                req: '(tanpa body)',
+                res_winner: { success: true, winner: true, username: 'JAMES', round: 3 },
+                res_locked: { success: false, reason: 'unity-not-ready', message: 'Unity is not ready — please wait' },
+                res_busy: { success: false, reason: 'playing', position: null, message: 'Someone is in line — please try again later' }
+              }
             },
             {
               method: 'GET', path: '/api/queue/my-status', auth: 'Bearer token HP', desc: 'Posisi live (polling HP ±3 detik).',
@@ -549,8 +621,8 @@ public class TennisUnityClient : MonoBehaviour
               sample: { req: { username: 'B' }, res: { success: true, username: 'B' } }
             },
             {
-              method: 'POST', path: '/api/admin/display-mode', auth: 'tidak (LAN)', desc: 'Tombol 🏆 di /admin: paksa layar Unity. leaderboard = Unity tampil LB fullscreen + semua READY dikunci (klik READY tidak memunculkan nama). game = kembali normal.',
-              sample: { req: { mode: 'leaderboard' }, res: { success: true, mode: 'leaderboard' } }
+              method: 'POST', path: '/api/admin/display-mode', auth: 'tidak (LAN)', desc: 'Tombol 🎮/🏆/❓ di /admin: paksa layar Unity. leaderboard = LB fullscreen, howtoplay = How to Play fullscreen (keduanya kunci semua READY, klik READY tidak memunculkan nama). game = kembali normal.',
+              sample: { req: { mode: 'howtoplay' }, res: { success: true, mode: 'howtoplay' } }
             }
           ]
         },

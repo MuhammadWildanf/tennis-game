@@ -414,8 +414,9 @@ app.get('/api/unity/info', (req, res) => {
     unity_uses_only_these: [
       'GET /api/status (boot check)',
       'GET /qr/join.png (display QR, via LAN IP/domain)',
-      'GET /api/queue/state every 2s (who is playing + waiting + display_mode)',
-      'GET /api/display/mode every 2-3s (game|leaderboard — admin forces Unity screen)',
+      'GET /api/queue/state every 2s (who is playing + waiting + display_mode + unity_home)',
+      'POST /api/unity/home every 2s ({at_home:true} while HOME screen showing — REQUIRED, READY stays locked without fresh heartbeat)',
+      'GET /api/display/mode every 2-3s (game|leaderboard|howtoplay — admin forces Unity screen)',
       'POST /api/queue/claim-turn (take current turn token when new current appears; idempotent; save PlayerPrefs)',
       'GET /api/profile (optional: verify token, best score)',
       'POST /api/score (end of game; burns token)',
@@ -430,8 +431,9 @@ app.get('/api/unity/info', (req, res) => {
       no_wait_to_scan: 'players NEVER wait to scan. Scan anytime (even mid-game) -> join line -> usher picks via /queue.',
       usher_only: 'USHER-ONLY: player does NOT press START. pick/next sets ready=1 instantly. Unity starts the game as soon as a new current appears + claim-turn succeeds.',
       usher_mode_staff_picks: 'staff page {BASE}/queue: POST /api/queue/pick {username, force?} -> picks ANY waiting player (free order). Blocked 409 with need_force when someone is playing unless force:true. With staff pick, Unity does NOT call next() — just polls state. Skip button = POST /api/queue/next (FIFO).',
-      unity_poll_state: 'GET /api/queue/state every 2s -> {current:{username, ready, turn_started_at}|null, waiting:[{username, position}], total_waiting, display_mode:"game"|"leaderboard"}',
-      unity_leaderboard_mode: 'ADMIN forces Unity screen: POST /api/admin/display-mode {mode:"leaderboard"|"game"}. Unity polls GET /api/display/mode (or reads display_mode in state): leaderboard = show LB fullscreen + DO NOT claim/start new game (READY is locked server-side: join->409 reason=leaderboard). game = back to normal QR/now-playing loop.',
+      unity_poll_state: 'GET /api/queue/state every 2s -> {current:{username, ready, turn_started_at}|null, waiting:[{username, position}], total_waiting, display_mode:"game"|"leaderboard"|"howtoplay"}',
+      unity_display_mode: 'ADMIN forces Unity screen: POST /api/admin/display-mode {mode:"game"|"leaderboard"|"howtoplay"}. Unity polls GET /api/display/mode (or reads display_mode in state): leaderboard = show LB fullscreen, howtoplay = show How-To-Play fullscreen; both = DO NOT claim/start new game (READY is locked server-side: join->409 reason=mode). game = back to normal QR/now-playing loop.',
+      unity_home_heartbeat: 'READY GATE: Unity must POST /api/unity/home {at_home:true} every ~2s while its HOME screen is showing (send false when leaving home). Server opens READY only with a heartbeat fresher than 8s; otherwise join->409 reason=unity-not-ready. State + display/mode expose unity_home so HP/admin can show "Unity getting ready".',
       unity_auto_rule: 'every 2s: state=GET /api/queue/state; if new current appears -> POST /api/queue/claim-turn (save token, OVERWRITE old one); then START GAME IMMEDIATELY. After POST /api/score -> back to polling (usher picks next). No next() in usher mode.',
       unity_next: 'POST /api/queue/next = SKIP/FIFO fallback (staff Skip button). Usher-driven flow does NOT use next() from Unity: staff picks via /api/queue/pick, Unity claims via /api/queue/claim-turn.',
       unity_loop_usher: 'poll state 2s -> new current? claim-turn (save token, overwrite PlayerPrefs) -> START GAME IMMEDIATELY -> POST score -> back to polling (usher picks next). No HP START button. Unity never calls next/pick.',
@@ -452,21 +454,43 @@ app.get('/api/unity/info', (req, res) => {
 // 'game' = normal (Unity shows QR / now-playing + player name on READY).
 // 'leaderboard' = admin forces Unity to show LEADERBOARD fullscreen +
 //                 all HP READY buttons are locked (no new current can appear).
+// 'howtoplay' = admin forces Unity to show HOW TO PLAY fullscreen +
+//               all HP READY buttons are locked too.
 let unityDisplayMode = 'game';
 
 // Public (Unity + HP poll this): which screen should Unity show?
 app.get('/api/display/mode', (req, res) => {
-  res.json({ mode: unityDisplayMode });
+  res.json({ mode: unityDisplayMode, unity_home: unityHomeFresh() });
 });
 
-// Admin: switch Unity screen. Called by the Leaderboard button in /admin.
+// Admin: switch Unity screen. Called by the mode buttons in /admin.
 app.post('/api/admin/display-mode', (req, res) => {
   const { mode } = req.body || {};
-  if (!['game', 'leaderboard'].includes(mode)) {
-    return res.status(400).json({ error: 'mode must be "game" or "leaderboard"' });
+  if (!['game', 'leaderboard', 'howtoplay'].includes(mode)) {
+    return res.status(400).json({ error: 'mode must be "game", "leaderboard" or "howtoplay"' });
   }
   unityDisplayMode = mode;
   res.json({ success: true, mode: unityDisplayMode });
+});
+
+// ─── Unity home heartbeat (gate for READY) ─────────────────────────────────
+// Unity POSTs {at_home:true} every ~2s while its HOME/idle screen is showing.
+// Players can press READY only while a FRESH home heartbeat exists (TTL 8s).
+// Unity offline / playing / takeover screen / crashed => READY locked.
+const UNITY_HOME_TTL_MS = 8000;
+let unityHomeAtMs = 0;
+function unityHomeFresh() {
+  return Date.now() - unityHomeAtMs < UNITY_HOME_TTL_MS;
+}
+
+// Unity: "saya di home". No auth (LAN). Call every ~2s alongside state polling.
+app.post('/api/unity/home', (req, res) => {
+  const { at_home } = req.body || {};
+  if (typeof at_home !== 'boolean') {
+    return res.status(400).json({ error: 'at_home must be true or false' });
+  }
+  unityHomeAtMs = at_home ? Date.now() : 0; // false = lock READY immediately
+  res.json({ success: true, at_home, unity_home: unityHomeFresh(), server_time: new Date().toISOString() });
 });
 
 // ─── Queue (turn-taking for ONE Unity station) ───────────────────────────────
@@ -497,9 +521,14 @@ function queuePosition(userId) {
 // Mobile: join the queue (idempotent — same user gets existing spot back;
 // finished players rejoin at the back of the line)
 app.post('/api/queue/join', authMiddleware, (req, res) => {
-  // Leaderboard mode: lock READY for everyone (admin is showing LB on Unity)
-  if (unityDisplayMode === 'leaderboard') {
-    return res.status(409).json({ error: 'Leaderboard is showing — please wait', reason: 'leaderboard' });
+  // Takeover mode (leaderboard/howtoplay): lock READY for everyone (admin owns the Unity screen)
+  if (unityDisplayMode !== 'game') {
+    const msg = unityDisplayMode === 'howtoplay' ? 'How to play is showing — please wait' : 'Leaderboard is showing — please wait';
+    return res.status(409).json({ error: msg, reason: unityDisplayMode });
+  }
+  // Unity not home (offline/playing/takeover screen): lock READY until fresh heartbeat
+  if (!unityHomeFresh()) {
+    return res.status(409).json({ error: 'Unity is not ready — please wait', reason: 'unity-not-ready' });
   }
   const ex = db.prepare('SELECT * FROM queue WHERE user_id = ?').get(req.user.id);
   // Gabung (baru) hanya saat stasiun bebas: tidak ada yang main & tidak ada yang antre.
@@ -563,7 +592,7 @@ app.get('/api/queue/state', (req, res) => {
       waiting = f.length ? f : waiting;
     }
   }
-  res.json({ current, waiting, total_waiting: waiting.length, display_mode: unityDisplayMode });
+  res.json({ current, waiting, total_waiting: waiting.length, display_mode: unityDisplayMode, unity_home: unityHomeFresh() });
 });
 
 // Unity: advance to next player. Marks current done, promotes earliest
@@ -703,9 +732,14 @@ function getRound() {
   return currentRound;
 }
 app.post('/api/queue/compete', authMiddleware, (req, res) => {
-  // Leaderboard mode: lock READY for everyone
-  if (unityDisplayMode === 'leaderboard') {
-    return res.json({ success: false, reason: 'leaderboard', message: 'Leaderboard is showing — please wait' });
+  // Takeover mode (leaderboard/howtoplay): lock READY for everyone
+  if (unityDisplayMode !== 'game') {
+    const msg = unityDisplayMode === 'howtoplay' ? 'How to play is showing — please wait' : 'Leaderboard is showing — please wait';
+    return res.json({ success: false, reason: unityDisplayMode, message: msg });
+  }
+  // Unity not home: lock READY until fresh heartbeat
+  if (!unityHomeFresh()) {
+    return res.json({ success: false, reason: 'unity-not-ready', message: 'Unity is not ready — please wait' });
   }
   // Satu waktu cuma 1 pemain: tolak kalau stasiun sibuk (ada yang main)
   // atau sudah ada yang antre (selain diri sendiri).
