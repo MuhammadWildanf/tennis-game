@@ -64,7 +64,6 @@
       <button class="btn" onclick="resetAllData()">Reset All</button>
       <button class="btn" onclick="backupData()">Backup JSON</button>
       <button class="btn" onclick="exportExcel()">Export Excel</button>
-      <a href="/scoreboard" target="_blank" rel="noopener" class="btn" style="text-decoration:none">🏆 Scoreboard</a>
       <span style="margin-left:auto;font-size:11px;color:rgba(255,255,255,.4)" id="join-url"></span>
     </div>
     <p id="admin-error" style="color:#ff7b7b;font-size:13px;margin-bottom:8px"></p>
@@ -77,7 +76,7 @@
     </div>
     <div id="tab-queue" style="display:none"><div class="card"><h3>Players <span class="live" id="q-live"></span></h3><div id="queue-list"></div></div></div>
     <div id="tab-matches" style="display:none"><div class="card"><h3>Recent Matches</h3><div id="matches-list"></div></div></div>
-    <div id="tab-lb" style="display:none"><div class="card"><h3>Leaderboard <span class="live" id="lb-count"></span><a href="/scoreboard" target="_blank" rel="noopener" class="btn btn-sm" style="text-decoration:none">Open /scoreboard ↗</a></h3><div id="lb-list-admin"></div></div></div>
+    <div id="tab-lb" style="display:none"><div class="card"><h3>Leaderboard <span class="live" id="lb-count"></span></h3><div id="lb-list-admin"></div></div></div>
   </main>
 <script>
 'use strict';
