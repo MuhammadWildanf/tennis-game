@@ -102,7 +102,7 @@ GET /api/queue/state
                  "best_score": 120, "ready": 1, "turn_started_at": "..." } | null,
     "waiting": [ { "username": "B", "position": 2 }, ... ],
     "total_waiting": 1,
-    "display_mode": "game" | "leaderboard"
+    "display_mode": "game" | "leaderboard" | "howtoplay"
   }
 ```
 

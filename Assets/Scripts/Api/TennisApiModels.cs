@@ -56,7 +56,7 @@ public class QueueState
     public CurrentPlayer current; // null jika idle
     public WaitingPlayer[] waiting;
     public int total_waiting;
-    public string display_mode; // "game" | "leaderboard" — dari admin
+    public string display_mode; // "game" | "leaderboard" | "howtoplay" — dari admin
 }
 
 [Serializable]
