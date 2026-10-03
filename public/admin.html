@@ -38,6 +38,9 @@
     .pill.confirmed{background:rgba(61,220,132,.15);color:#3ddc84}
     .pill.win{background:rgba(61,220,132,.15);color:#3ddc84}
     .pill.loss{background:rgba(255,80,80,.15);color:#ff7b7b}
+    .pill.info{background:rgba(124,196,255,.15);color:#7cc4ff}
+    .pill.warn{background:rgba(245,184,30,.15);color:#f5c542}
+    .pill.error{background:rgba(255,80,80,.15);color:#ff7b7b}
     .btn-sm{padding:4px 8px;font-size:11px;border-radius:6px}
     #lb-list-admin{max-height:420px;overflow:auto}
     .qr-box{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
@@ -53,6 +56,7 @@
       <button data-tab="queue" onclick="switchTab('queue')">👥 <span class="label">Players</span></button>
       <button data-tab="matches" onclick="switchTab('matches')">📜 <span class="label">Matches</span></button>
       <button data-tab="lb" onclick="switchTab('lb')">🏆 <span class="label">Leaderboard</span></button>
+      <button data-tab="logs" onclick="switchTab('logs')">📝 <span class="label">Logs</span></button>
     </nav>
     <div class="side-foot">CITI WEALTH SYMPOSIUM</div>
   </aside>
@@ -83,14 +87,30 @@
     <div id="tab-queue" style="display:none"><div class="card"><h3>Players <span class="live" id="q-live"></span></h3><div id="queue-list"></div></div></div>
     <div id="tab-matches" style="display:none"><div class="card"><h3>Recent Matches</h3><div id="matches-list"></div></div></div>
     <div id="tab-lb" style="display:none"><div class="card"><h3>Leaderboard <span class="live" id="lb-count"></span></h3><div id="lb-list-admin"></div></div></div>
+    <div id="tab-logs" style="display:none">
+      <div class="stat-grid" id="health-grid"></div>
+      <div class="card">
+        <h3>Event Logs <span class="live" id="logs-count"></span></h3>
+        <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center">
+          <select id="log-level" onchange="loadLogs()" style="background:#0a1224;color:#fff;border:1px solid rgba(255,255,255,.14);border-radius:8px;padding:6px 10px;font-size:12px">
+            <option value="">All levels</option>
+            <option value="info">info</option>
+            <option value="warn">warn</option>
+            <option value="error">error</option>
+          </select>
+          <button class="btn btn-sm" onclick="loadLogs()">↻ Refresh</button>
+        </div>
+        <div id="logs-list"></div>
+      </div>
+    </div>
   </main>
 <script>
 'use strict';
 const $=s=>document.querySelector(s);
 async function api(path,options={}){const res=await fetch(path,{method:options.method||'GET',headers:{'Content-Type':'application/json'},body:options.body});const data=await res.json().catch(()=>({}));if(!res.ok)throw new Error(data.error||'Request failed');return data;}
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-function switchTab(t){document.querySelectorAll('.side-nav button').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));['dash','queue','matches','lb'].forEach(x=>{const el=document.getElementById('tab-'+x);if(el)el.style.display=x===t?'block':(t==='dash'&&x==='dash'?'block':'none')});if(t!=='dash')document.getElementById('tab-dash').style.display='none';}
-async function loadAll(){const errEl=$('#admin-error');errEl.textContent='';try{const [stats,matches,lb,queue,dm]=await Promise.all([api('/api/admin/stats'),api('/api/admin/matches'),fetch('/api/leaderboard?sort=best_score&limit=20').then(r=>r.json()),api('/api/admin/queue'),fetch('/api/display/mode').then(r=>r.json()).catch(()=>({mode:'game'}))]);renderStats(stats);renderQueue(queue);renderMatches(matches);renderLb(lb);renderUnityMode(dm.mode);renderUnityHomeBadge(dm.unity_home);}catch(e){errEl.textContent=e.message}}
+function switchTab(t){document.querySelectorAll('.side-nav button').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));['dash','queue','matches','lb','logs'].forEach(x=>{const el=document.getElementById('tab-'+x);if(el)el.style.display=x===t?'block':(t==='dash'&&x==='dash'?'block':'none')});if(t!=='dash')document.getElementById('tab-dash').style.display='none';if(t==='logs'){loadHealth();loadLogs();}}
+async function loadAll(){const errEl=$('#admin-error');errEl.textContent='';try{const [stats,matches,lb,queue,dm]=await Promise.all([api('/api/admin/stats'),api('/api/admin/matches'),fetch('/api/leaderboard?sort=best_score&limit=20').then(r=>r.json()),api('/api/admin/queue'),fetch('/api/display/mode').then(r=>r.json()).catch(()=>({mode:'game'}))]);renderStats(stats);renderQueue(queue);renderMatches(matches);renderLb(lb);renderUnityMode(dm.mode);renderUnityHomeBadge(dm.unity_home);}catch(e){errEl.textContent=e.message}loadHealth();loadLogs();}
 function renderStats(s){const cards=[[s.users_total,'USERS'],[s.users_played,'PLAYED'],[s.matches_total,'MATCHES'],[s.wins,'WINS']];$('#stat-grid').innerHTML=cards.map(([v,l])=>`<div class="stat"><b>${v}</b><span>${l}</span></div>`).join('');}
 function renderQueue(rows){$('#join-url').textContent=location.origin+'/join';const j2=$('#join-url2');if(j2)j2.textContent=location.origin+'/join';$('#q-live').textContent=rows.length?rows.length+' players':'';$('#queue-list').innerHTML=rows.length?`<table class="admin-table"><tr><th>#</th><th>PLAYER</th><th>STATUS</th><th>SINCE</th><th></th></tr>`+rows.map((q,i)=>`<tr><td>${i+1}</td><td><b>${esc(q.username)}</b>${q.ready_at?' ✓':''}</td><td><span class="pill ${q.status==='current'?'confirmed':'pending'}">${esc(q.status)}</span></td><td>${esc(q.created_at)}</td><td><button class="btn btn-sm" onclick="removeFromQueue('${esc(q.username)}')">✕</button></td></tr>`).join('')+'</table>':'<p style="color:rgba(255,255,255,.5);font-size:13px">No players — Unity idle.</p>';}
 async function removeFromQueue(username){const r=await Swal.fire({icon:'warning',title:`Remove ${username}?`,showCancelButton:true,confirmButtonColor:'#e1251b'});if(!r.isConfirmed)return;try{await api('/api/admin/queue/remove',{method:'POST',body:JSON.stringify({username})});loadAll();}catch(e){Swal.fire({icon:'error',title:'Error',text:e.message});}}
@@ -100,12 +120,15 @@ async function resetAllData(){const r=await Swal.fire({icon:'warning',title:'Res
 async function backupData(){try{const d=await api('/api/admin/backup');const blob=new Blob([JSON.stringify(d,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='backup-'+Date.now()+'.json';a.click();}catch(e){Swal.fire({icon:'error',title:'Error',text:e.message});}}
 function exportExcel(){window.location.href='/api/admin/export';}
 function renderMatches(rows){$('#matches-list').innerHTML=rows.length?`<table class="admin-table"><tr><th>PLAYER</th><th>SCORE</th><th>RESULT</th><th>WHEN</th></tr>`+rows.map(m=>`<tr><td><b>${esc(m.username)}</b></td><td style="color:#f5c542;font-weight:800">${esc(m.score)}</td><td><span class="pill ${esc(m.result)}">${esc(m.result)}</span></td><td>${esc(m.played_at)}</td></tr>`).join('')+'</table>':'<p style="color:rgba(255,255,255,.5);font-size:13px">No matches yet.</p>';}
-function renderLb(rows){$('#lb-count').textContent=rows.length?rows.length+' players':'';$('#lb-list-admin').innerHTML=rows.length?`<table class="admin-table"><tr><th>#</th><th>PLAYER</th><th>BEST</th><th>W/L</th></tr>`+rows.map(p=>`<tr><td>${p.rank}</td><td><b>${esc(p.display_name||p.username)}</b></td><td style="color:#f5c542;font-weight:800">${p.best_score}</td><td>${p.wins}/${p.losses}</td></tr>`).join('')+'</table>':'<p style="color:rgba(255,255,255,.5);font-size:13px">Leaderboard empty.</p>';}
+function renderLb(rows){$('#lb-count').textContent=rows.length?rows.length+' players':'';$('#lb-list-admin').innerHTML=rows.length?`<table class="admin-table"><tr><th>#</th><th>PLAYER</th><th>BEST</th><th>W/L</th><th></th></tr>`+rows.map(p=>`<tr><td>${p.rank}</td><td><b>${esc(p.display_name||p.username)}</b><br><small style="color:rgba(255,255,255,.45)">${esc(p.username)}</small></td><td style="color:#f5c542;font-weight:800">${p.best_score}</td><td>${p.wins}/${p.losses}</td><td><button class="btn btn-sm danger" title="Hapus permanen ${esc(p.username)} + history" onclick="deleteUser('${esc(p.username)}')">🗑</button></td></tr>`).join('')+'</table>':'<p style="color:rgba(255,255,255,.5);font-size:13px">Leaderboard empty.</p>';}
+async function deleteUser(username){const r=await Swal.fire({icon:'warning',title:`Hapus ${username} permanen?`,text:'Alias + skor + history akan hilang dan tidak bisa dikembalikan.',showCancelButton:true,confirmButtonText:'Ya, hapus',cancelButtonText:'Batal',confirmButtonColor:'#e1251b'});if(!r.isConfirmed)return;try{const res=await fetch('/api/admin/users/'+encodeURIComponent(username),{method:'DELETE'});const d=await res.json().catch(()=>({}));if(!res.ok)throw new Error(d.error||'Request failed');Swal.fire({icon:'success',title:`${d.username} dihapus`,timer:1500,showConfirmButton:false});loadAll();}catch(e){Swal.fire({icon:'error',title:'Error',text:e.message});}}
 let unityMode='game';
 const UNITY_MODES={game:{btn:'btn-mode-game',label:'Game',color:'#3ddc84',note:'Unity → Game (pemain bisa READY lagi)'},leaderboard:{btn:'btn-mode-lb',label:'Leaderboard',color:'#f5c542',note:'Unity → Leaderboard fullscreen (READY dikunci)'},howtoplay:{btn:'btn-mode-how',label:'How to Play',color:'#7cc4ff',note:'Unity → How to Play (info saja, READY tetap buka)'}};
 function renderUnityMode(mode){unityMode=mode||'game';for(const [m,cfg] of Object.entries(UNITY_MODES)){const b=document.getElementById(cfg.btn);if(!b)continue;const on=unityMode===m;b.classList.toggle('on',on);b.style.background=on?cfg.color:'';b.style.borderColor=on?cfg.color:'';b.style.color=on?'#0a1224':'';}}
 function renderUnityHomeBadge(isHome){const el=document.getElementById('unity-home-badge');if(!el)return;el.textContent=isHome?'🟢 HOME':'🔴 OFFLINE';el.style.color=isHome?'#3ddc84':'#ff7b7b';}
 async function setUnityMode(next){if(next===unityMode)return;const cfg=UNITY_MODES[next];const lockNote=next==='leaderboard'?'Semua tombol READY pemain akan dikunci.':'Pemain tetap bisa READY.';const r=await Swal.fire({icon:'question',title:`Unity → ${cfg.label}?`,text:lockNote,showCancelButton:true,confirmButtonColor:cfg.color});if(!r.isConfirmed)return;try{const d=await api('/api/admin/display-mode',{method:'POST',body:JSON.stringify({mode:next})});renderUnityMode(d.mode);Swal.fire({icon:'success',title:UNITY_MODES[d.mode].note,timer:1800,showConfirmButton:false});}catch(e){Swal.fire({icon:'error',title:'Error',text:e.message});}}
+async function loadHealth(){try{const h=await api('/api/health');const cards=[[h.ok?'OK':'DOWN','STATUS'],[Math.floor(h.uptime_s/3600)+'h','UPTIME'],[h.db_ok?'OK':'FAIL','DB'],[h.unity_home?'HOME':'OFFLINE','UNITY'],[h.display_mode||'-','MODE']];document.getElementById('health-grid').innerHTML=cards.map(([v,l])=>`<div class="stat"><b style="font-size:18px">${esc(v)}</b><span>${l}</span></div>`).join('');}catch(e){}}
+async function loadLogs(){try{const lv=(document.getElementById('log-level')||{}).value||'';const q=lv?`?limit=100&level=${encodeURIComponent(lv)}`:'?limit=100';const d=await api('/api/admin/logs'+q);document.getElementById('logs-count').textContent=d.total?d.total+' events':'';document.getElementById('logs-list').innerHTML=d.logs.length?`<table class="admin-table"><tr><th>TIME</th><th>LEVEL</th><th>EVENT</th><th>DETAIL</th></tr>`+d.logs.map(l=>`<tr><td style="white-space:nowrap">${esc(l.ts)}</td><td><span class="pill ${esc(l.level)}">${esc(l.level)}</span></td><td><b>${esc(l.event)}</b></td><td>${esc(l.detail||'')}</td></tr>`).join('')+'</table>':'<p style="color:rgba(255,255,255,.5);font-size:13px">No events yet.</p>';}catch(e){}}
 loadAll();setInterval(()=>loadAll(),5000);
 </script>
 </body>

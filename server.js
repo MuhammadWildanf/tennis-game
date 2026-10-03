@@ -123,6 +123,18 @@ function authMiddleware(req, res, next) {
   next();
 }
 
+// ─── Event log + Health (ring buffer in-memory, tampil di /admin tab Logs) ───
+const SERVER_STARTED_AT = Date.now();
+const EVENT_LOGS = [];
+const EVENT_LOG_MAX = 500;
+function logEvent(level, event, detail) {
+  try {
+    EVENT_LOGS.push({ ts: new Date().toISOString(), level, event, detail: detail ?? null });
+    if (EVENT_LOGS.length > EVENT_LOG_MAX) EVENT_LOGS.splice(0, EVENT_LOGS.length - EVENT_LOG_MAX);
+  } catch (_) {}
+  if (level === 'error') { try { console.error(`[event:${event}]`, detail ?? ''); } catch (_) {} }
+}
+
 // ─── HTTP Routes ─────────────────────────────────────────────────────────────
 
 // Signup (alias only — password is optional)
@@ -470,6 +482,7 @@ app.post('/api/admin/display-mode', (req, res) => {
     return res.status(400).json({ error: 'mode must be "game", "leaderboard" or "howtoplay"' });
   }
   unityDisplayMode = mode;
+  logEvent('info', 'display-mode', mode);
   res.json({ success: true, mode: unityDisplayMode });
 });
 
@@ -787,6 +800,7 @@ app.post('/api/admin/reset', (req, res) => {
   try { db.prepare("DELETE FROM play_clicks").run(); } catch(_){}
   currentRound += 1;
   unityDisplayMode = 'game';
+  logEvent('warn', 'reset-queue', `round=${currentRound}`);
   res.json({ success: true, mode: unityDisplayMode });
 });
 // Admin reset all data (queue + history + leaderboard + users)
@@ -798,6 +812,7 @@ app.post('/api/admin/reset-all', (req, res) => {
   db.prepare("DELETE FROM users").run();
   currentRound = 1;
   unityDisplayMode = 'game';
+  logEvent('warn', 'reset-all', 'all data cleared');
   res.json({ success: true, mode: unityDisplayMode });
 });
 app.post('/api/admin/end-game', (req, res) => {
@@ -806,6 +821,7 @@ app.post('/api/admin/end-game', (req, res) => {
   if (cur) try { db.prepare("DELETE FROM active_sessions WHERE user_id=? AND purpose='turn'").run(cur.user_id); } catch(_){}
   // Ronde baru hanya kalau ada game yang benar-benar berakhir (idle-SKIP tidak memajukan ronde)
   if (cur) currentRound += 1;
+  logEvent('info', 'end-game', cur ? cur.username : 'no-game');
   res.json({ success: true, ended: cur ? cur.username : null });
 });
 app.get('/api/admin/backup', (req, res) => {
@@ -821,7 +837,7 @@ app.get('/api/admin/export', (req, res) => {
     SELECT u.username, u.display_name, u.total_matches, u.wins, u.losses, u.best_score, u.total_score,
            (CASE WHEN u.total_matches>0 THEN ROUND(u.wins*100.0/u.total_matches,1) ELSE 0 END) as win_rate,
            u.last_played
-    FROM users ORDER BY u.best_score DESC
+    FROM users u ORDER BY u.best_score DESC
   `).all();
   const header = 'rank,username,display_name,total_matches,wins,losses,best_score,total_score,win_rate,last_played';
   const csv = [header, ...rows.map((r,i)=> `${i+1},${r.username},${r.display_name},${r.total_matches},${r.wins},${r.losses},${r.best_score},${r.total_score},${r.win_rate},${r.last_played||''}`)].join('\n');
@@ -838,7 +854,69 @@ app.post('/api/admin/queue/remove', (req, res) => {
   db.prepare("DELETE FROM queue WHERE user_id = ?").run(user.id);
   // Batalkan juga token gilirannya supaya Unity langsung idle + nama hilang
   try { db.prepare("DELETE FROM active_sessions WHERE user_id = ? AND purpose = 'turn'").run(user.id); } catch (_) {}
+  logEvent('warn', 'queue-remove', String(username).toUpperCase());
   res.json({ success: true, username: String(username).toUpperCase() });
+});
+
+// Admin: hapus permanen 1 user + semua datanya (queue, history, clicks, sessions).
+// Dipakai dari /admin tombol 🗑 di tab Leaderboard.
+app.delete('/api/admin/users/:username', (req, res) => {
+  const uname = String(req.params.username || '').toUpperCase().trim();
+  if (!uname) return res.status(400).json({ error: 'Missing username' });
+  const user = db.prepare('SELECT id, username FROM users WHERE username = ?').get(uname);
+  if (!user) return res.status(404).json({ error: 'User not found' });
+  const delAll = db.transaction((uid) => {
+    db.prepare('DELETE FROM queue WHERE user_id = ?').run(uid);
+    try { db.prepare('DELETE FROM play_clicks WHERE user_id = ?').run(uid); } catch (_) {}
+    db.prepare('DELETE FROM match_history WHERE user_id = ?').run(uid);
+    db.prepare('DELETE FROM active_sessions WHERE user_id = ?').run(uid);
+    db.prepare('DELETE FROM users WHERE id = ?').run(uid);
+  });
+  try {
+    delAll(user.id);
+  } catch (err) {
+    console.error('Delete user error:', err);
+    return res.status(500).json({ error: 'Failed to delete user' });
+  }
+  logEvent('warn', 'user-delete', user.username);
+  res.json({ success: true, username: user.username });
+});
+
+// ─── Health + Event log (untuk tab Logs di /admin) ───────────────────────────
+app.get('/api/health', (req, res) => {
+  let dbOk = false;
+  try { db.prepare('SELECT 1').get(); dbOk = true; } catch (_) {}
+  res.json({
+    ok: dbOk,
+    uptime_s: Math.floor((Date.now() - SERVER_STARTED_AT) / 1000),
+    started_at: new Date(SERVER_STARTED_AT).toISOString(),
+    server_time: new Date().toISOString(),
+    db_ok: dbOk,
+    unity_home: unityHomeFresh(),
+    display_mode: unityDisplayMode,
+    version: '1.1.0'
+  });
+});
+
+app.get('/api/admin/logs', (req, res) => {
+  const limit = Math.min(parseInt(req.query.limit, 10) || 100, 500);
+  const level = req.query.level;
+  const rows = (level ? EVENT_LOGS.filter((e) => e.level === level) : EVENT_LOGS).slice(-limit).reverse();
+  res.json({ count: rows.length, total: EVENT_LOGS.length, logs: rows });
+});
+
+// Error handler — catat URL + body ringkas supaya log PM2 / tab Logs jelas.
+// (Contoh: JSON rusak dari HP/Unity, atau SqliteError seperti u.username kemarin.)
+// NOTE: harus 4 argumen + dipasang SEBELUM app.listen agar Express pakai ini.
+app.use((err, req, res, _next) => {
+  const where = `${req.method} ${req.originalUrl || req.url}`;
+  if (err && err.type === 'entity.parse.failed') {
+    logEvent('error', 'bad-json', `${where} :: ${err.message}`);
+    return res.status(400).json({ error: 'Invalid JSON body' });
+  }
+  logEvent('error', 'unhandled', `${where} :: ${(err && err.message) || err}`);
+  console.error(err);
+  res.status(500).json({ error: 'Internal server error' });
 });
 
 // ─── Start Server ────────────────────────────────────────────────────────────
